@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Description>gRPC client and server code generated from SmartCity.Contracts/Protos</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Google.Protobuf" />
+    <PackageReference Include="Grpc.AspNetCore.Server" />
+    <PackageReference Include="Grpc.Net.Client" />
+    <PackageReference Include="Grpc.Tools" PrivateAssets="All" />
+  </ItemGroup>
+
+  <!-- The protos have no csharp_namespace, so types land in Smartcity.Common.V1, Smartcity.Enums.V1,
+       Smartcity.Queries.V1 and Smartcity.Commands.V1. Do not edit the protos without asking. -->
+  <ItemGroup>
+    <Protobuf Include="..\SmartCity.Contracts\Protos\*.proto"
+              ProtoRoot="..\SmartCity.Contracts\Protos" GrpcServices="Both" />
+  </ItemGroup>
+</Project>

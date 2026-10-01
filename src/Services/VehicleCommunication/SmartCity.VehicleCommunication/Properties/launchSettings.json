@@ -1,0 +1,9 @@
+{
+  "profiles": {
+    "SmartCity.VehicleCommunication": {
+      "commandName": "Project",
+      "launchBrowser": false,
+      "environmentVariables": { "ASPNETCORE_ENVIRONMENT": "Development" }
+    }
+  }
+}
