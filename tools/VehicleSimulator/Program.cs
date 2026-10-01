@@ -24,7 +24,7 @@ for (var i = 0; i < args.Length; i++)
 
 Console.WriteLine($"Starting simulator: {vehicles} vehicles, {intervalMs}ms interval, {(frames == int.MaxValue ? "infinite" : frames)} frames");
 
-// Tiny valid JPEG (a 1x1 red pixel).
+// SKELETON: real version uses real camera frames; this is a 1x1 placeholder JPEG.
 var tinyJpeg = Convert.FromBase64String(
     "/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAP//////////////////////" +
     "////////////////////////////////////////////////////////////" +

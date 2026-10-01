@@ -266,6 +266,7 @@ public sealed class MqttSubscriberService : BackgroundService
         _logger.LogInformation("Telemetry from {VehicleId} published and cached in Redis", vehicleId);
     }
 
+    // SKELETON: real version uses EMQX mTLS certificate + per-device topic ACLs (design record §6).
     private static bool IsValidVehicleId(string vehicleId) =>
         vehicleId.StartsWith("MUN-VEH-") && vehicleId.Length > 8;
 
