@@ -106,7 +106,7 @@ services:
     build:
       context: .
       dockerfile: src/Gateway/SmartCity.ApiGateway/Dockerfile
-      network: host
+      network: host  # Cloud session only: NuGet restore needs the host proxy. Remove for local/CI builds.
     profiles: ["apps"]
     ports:
       - "5000:5000"
@@ -126,7 +126,7 @@ services:
     build:
       context: .
       dockerfile: src/Services/VehicleCommunication/SmartCity.VehicleCommunication/Dockerfile
-      network: host
+      network: host  # Cloud session only: NuGet restore needs the host proxy. Remove for local/CI builds.
     profiles: ["apps"]
     ports:
       - "5210:5210"
@@ -154,7 +154,7 @@ services:
     build:
       context: .
       dockerfile: src/Services/AiDetection/SmartCity.AiDetection/Dockerfile
-      network: host
+      network: host  # Cloud session only: NuGet restore needs the host proxy. Remove for local/CI builds.
     profiles: ["apps"]
     ports:
       - "5220:5220"
@@ -174,7 +174,7 @@ services:
     build:
       context: .
       dockerfile: src/Services/Pothole/SmartCity.Pothole.Api/Dockerfile
-      network: host
+      network: host  # Cloud session only: NuGet restore needs the host proxy. Remove for local/CI builds.
     profiles: ["apps"]
     ports:
       - "5230:5230"
@@ -195,7 +195,7 @@ services:
     build:
       context: .
       dockerfile: src/Services/Inventory/SmartCity.Inventory.Api/Dockerfile
-      network: host
+      network: host  # Cloud session only: NuGet restore needs the host proxy. Remove for local/CI builds.
     profiles: ["apps"]
     ports:
       - "5240:5240"
@@ -216,7 +216,7 @@ services:
     build:
       context: .
       dockerfile: src/Services/Violation/SmartCity.Violation.Api/Dockerfile
-      network: host
+      network: host  # Cloud session only: NuGet restore needs the host proxy. Remove for local/CI builds.
     profiles: ["apps"]
     ports:
       - "5250:5250"
@@ -237,7 +237,7 @@ services:
     build:
       context: .
       dockerfile: src/Services/Building/SmartCity.Building.Api/Dockerfile
-      network: host
+      network: host  # Cloud session only: NuGet restore needs the host proxy. Remove for local/CI builds.
     profiles: ["apps"]
     ports:
       - "5260:5260"
@@ -258,7 +258,7 @@ services:
     build:
       context: .
       dockerfile: src/Services/CostCalculation/SmartCity.CostCalculation.Api/Dockerfile
-      network: host
+      network: host  # Cloud session only: NuGet restore needs the host proxy. Remove for local/CI builds.
     profiles: ["apps"]
     ports:
       - "5270:5270"
@@ -279,7 +279,7 @@ services:
     build:
       context: .
       dockerfile: src/Services/WorkOrder/SmartCity.WorkOrder.Api/Dockerfile
-      network: host
+      network: host  # Cloud session only: NuGet restore needs the host proxy. Remove for local/CI builds.
     profiles: ["apps"]
     ports:
       - "5280:5280"
@@ -300,7 +300,7 @@ services:
     build:
       context: .
       dockerfile: src/Services/Notification/SmartCity.Notification.Api/Dockerfile
-      network: host
+      network: host  # Cloud session only: NuGet restore needs the host proxy. Remove for local/CI builds.
     profiles: ["apps"]
     ports:
       - "5290:5290"
