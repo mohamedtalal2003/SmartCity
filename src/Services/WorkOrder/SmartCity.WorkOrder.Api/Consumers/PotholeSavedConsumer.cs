@@ -83,35 +83,6 @@ public sealed class PotholeSavedConsumer : IConsumer<PotholeSaved>
         wo.ClearDomainEvents();
         await _db.SaveChangesAsync(context.CancellationToken);
 
-        if (wo.EstimatedCost is null)
-        {
-            // The CostEstimateGenerated consumer may be running in a parallel outbox transaction.
-            // Delay so its transaction commits, then query via a separate connection to bypass
-            // this consumer's own uncommitted transaction.
-            await Task.Delay(2000, context.CancellationToken);
-            await using var conn = new Npgsql.NpgsqlConnection(_db.Database.GetConnectionString());
-            await conn.OpenAsync(context.CancellationToken);
-
-            await using var cmd = conn.CreateCommand();
-            cmd.CommandText = "SELECT \"TotalEstimatedCost\" FROM pending_cost_estimates WHERE \"SourceEntityId\" = @id LIMIT 1";
-            cmd.Parameters.AddWithValue("id", msg.PotholeId);
-            var result = await cmd.ExecuteScalarAsync(context.CancellationToken);
-
-            if (result is decimal cost)
-            {
-                wo.AttachCostEstimate(cost);
-                await _db.SaveChangesAsync(context.CancellationToken);
-
-                await using var delCmd = conn.CreateCommand();
-                delCmd.CommandText = "DELETE FROM pending_cost_estimates WHERE \"SourceEntityId\" = @id";
-                delCmd.Parameters.AddWithValue("id", msg.PotholeId);
-                await delCmd.ExecuteNonQueryAsync(context.CancellationToken);
-
-                Log.Information("Late-attached cost {Cost} to work order {TicketNumber}",
-                    cost, wo.TicketNumber);
-            }
-        }
-
         Log.Information("Created work order {TicketNumber} for pothole {PotholeId}, cost={Cost}",
             wo.TicketNumber, msg.PotholeId, wo.EstimatedCost);
     }

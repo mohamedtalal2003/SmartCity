@@ -18,6 +18,7 @@ builder.AddSmartCityBus(ServiceName, x =>
 {
     x.AddConsumer<PotholeSavedConsumer>();
     x.AddConsumer<CostEstimateGeneratedConsumer>();
+    x.AddConsumer<WorkOrderCostReconciliationConsumer>();
     x.AddSmartCityOutbox<WorkOrderDbContext>();
 });
 
