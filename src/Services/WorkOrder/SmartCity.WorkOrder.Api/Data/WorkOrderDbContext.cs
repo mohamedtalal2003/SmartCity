@@ -12,6 +12,7 @@ public class WorkOrderDbContext : DbContext
     public DbSet<WorkOrderAggregate> WorkOrders => Set<WorkOrderAggregate>();
     public DbSet<StatusHistoryEntry> StatusHistory => Set<StatusHistoryEntry>();
     public DbSet<PendingCostEstimate> PendingCostEstimates => Set<PendingCostEstimate>();
+    public DbSet<ProcessedIdempotencyKey> ProcessedIdempotencyKeys => Set<ProcessedIdempotencyKey>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -51,6 +52,7 @@ public class WorkOrderDbContext : DbContext
         {
             e.ToTable("work_order_status_history");
             e.HasKey(h => h.Id);
+            e.Property(h => h.Id).ValueGeneratedNever();
             e.Property(h => h.From).HasConversion<string>();
             e.Property(h => h.To).HasConversion<string>();
         });
@@ -61,6 +63,13 @@ public class WorkOrderDbContext : DbContext
             e.HasKey(p => p.Id);
             e.HasIndex(p => p.SourceEntityId).IsUnique();
             e.Property(p => p.TotalEstimatedCost).HasColumnType("numeric(12,2)");
+        });
+
+        modelBuilder.Entity<ProcessedIdempotencyKey>(e =>
+        {
+            e.ToTable("processed_idempotency_keys");
+            e.HasKey(k => k.Key);
+            e.Property(k => k.Key).HasMaxLength(64);
         });
     }
 }
