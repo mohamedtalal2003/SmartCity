@@ -7,8 +7,12 @@ set -eu
 S3="${S3_ENDPOINT:-http://s3:8333}"
 MASTER="${SEAWEED_MASTER:-s3:9333}"
 
+AWS_ACCESS_KEY_ID="${S3_ACCESS_KEY:-dev}"
+AWS_SECRET_ACCESS_KEY="${S3_SECRET_KEY:-dev}"
+export AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY
+
 for bucket in frames-temp frames-permanent evidence; do
-  code=$(curl -s -o /dev/null -w '%{http_code}' -X PUT "$S3/$bucket")
+  code=$(curl -s -o /dev/null -w '%{http_code}' -X PUT --aws-sigv4 "aws:amz:us-east-1:s3" --user "$AWS_ACCESS_KEY_ID:$AWS_SECRET_ACCESS_KEY" "$S3/$bucket")
   case "$code" in
     200) echo "created bucket $bucket" ;;
     409) echo "bucket $bucket already exists" ;;
@@ -18,7 +22,7 @@ done
 
 # SKELETON: temp frames expire after 30 days. The real retention window is still open
 # (design record §15); change <Days> here once it is decided.
-curl -sf -X PUT -H 'Content-Type: application/xml' "$S3/frames-temp?lifecycle" --data-binary \
+curl -sf -X PUT -H 'Content-Type: application/xml' --aws-sigv4 "aws:amz:us-east-1:s3" --user "$AWS_ACCESS_KEY_ID:$AWS_SECRET_ACCESS_KEY" "$S3/frames-temp?lifecycle" --data-binary \
   '<LifecycleConfiguration><Rule><ID>expire-after-30-days</ID><Filter><Prefix></Prefix></Filter><Status>Enabled</Status><Expiration><Days>30</Days></Expiration></Rule></LifecycleConfiguration>'
 echo "frames-temp lifecycle: expire after 30 days"
 
