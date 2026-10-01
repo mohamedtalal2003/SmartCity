@@ -69,7 +69,10 @@ One project per service is fine for the skeleton (folders inside for `Consumers/
    - Kestrel config helper for the two-port setup (HTTP/1 + HTTP/2 gRPC) from CLAUDE.md.
    - `AddSmartCityBlobStorage()` — registers `IAmazonS3` from the `S3:*` config section
      (`ServiceURL`, `ForcePathStyle = true`) plus an `EnsureBucketsAsync(params string[] buckets)`
-     startup helper that creates missing buckets, retrying until storage is reachable.
+     startup helper that creates missing buckets, retrying until storage is reachable. It runs
+     **only in the Development environment** and **only creates missing buckets**: it never sets
+     lifecycle/expiry rules (those belong to `infra/s3/init-buckets.sh` locally and to infra config
+     in production).
 5. Empty `Program.cs` for every service + Gateway, each wired with the building blocks and
    listening on its ports.
 
@@ -105,11 +108,11 @@ One project per service is fine for the skeleton (folders inside for `Consumers/
   1. Validate: vehicleId in topic is well formed; required user properties exist; lat/lon inside a
      Konya bounding box (lat 37.6–38.2, lon 32.2–32.8). Invalid → log a warning with reason, drop.
   2. Upload to bucket `frames-temp`, key `{vehicleId}/{yyyy-MM-dd}/{frameId}.jpg`
-     (AWSSDK.S3 via `AddSmartCityBlobStorage`). On startup, call
+     (AWSSDK.S3 via `AddSmartCityBlobStorage`). On startup **in Development only**, call
      `EnsureBucketsAsync("frames-temp", "frames-permanent", "evidence")`.
   3. Publish `FrameReceived` with `CorrelationId = FrameId`,
      `ImageUrl = {S3:PublicBaseUrl}/frames-temp/{key}`.
-  *stub:* no automatic expiry of `frames-temp` yet (retention is a later decision, design record §5).
+  *stub:* Dev expiry of frames-temp is 30 days (set in infra/s3/init-buckets.sh). Production retention and the promotion to frames-permanent are still open; promotion changes the image URL, which stored events would still point to, so it needs an L3 decision (one idea: one bucket, expire by object tag).
 - Telemetry handling: publish `VehicleTelemetryReceived` (new CorrelationId) **and** write the live
   position to Redis hash `vehicle:pos:{vehicleId}` (lat, lon, speed, heading, at) with 60 s TTL.
 - No database. No outbox needed (nothing to commit atomically); publish directly.

@@ -59,11 +59,24 @@ services:
     volumes: [s3data:/data]
     # DEV ONLY: no S3 identities configured, so the API accepts anonymous requests and
     # image URLs open directly in the browser. Real credentials come with production config.
-    # Buckets are NOT created here: services create the buckets they need at startup.
+    # Buckets are created by the s3-init container below.
     healthcheck:
-      test: ["CMD-SHELL", "wget -q -O /dev/null http://localhost:8333/ || exit 1"]
+      # 127.0.0.1, not localhost: in the container localhost resolves to ::1 first, and the
+      # SeaweedFS S3 gateway listens on IPv4 only, so a localhost probe is always refused.
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:8333/ || exit 1"]
       interval: 10s
       retries: 30
+
+  s3-init:
+    # One-shot: creates frames-temp (30-day expiry), frames-permanent and evidence, then exits 0.
+    image: chrislusf/seaweedfs:latest
+    depends_on:
+      s3:
+        condition: service_healthy
+    entrypoint: ["/bin/sh", "/init-buckets.sh"]
+    volumes:
+      - ./infra/s3/init-buckets.sh:/init-buckets.sh:ro
+    restart: "no"
 
   redis:
     image: redis:7-alpine
