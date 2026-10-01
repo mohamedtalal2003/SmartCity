@@ -36,8 +36,7 @@ public sealed class WorkOrderCommandGrpcService : WorkOrderCommandService.WorkOr
             return ErrorResponse(ErrorCode.InvalidState, "Cannot assign crew in current state", request.Metadata);
         }
 
-        await PublishDomainEventsAndSave(wo, context.CancellationToken);
-        return SuccessResponse(wo.Id, request.Metadata);
+        return await PublishAndSaveWithIdempotency(wo, request.Metadata, context.CancellationToken);
     }
 
     public override async Task<CommandResponse> MarkEnRoute(WorkOrderActionRequest request, ServerCallContext context)
@@ -61,8 +60,7 @@ public sealed class WorkOrderCommandGrpcService : WorkOrderCommandService.WorkOr
             return ErrorResponse(ErrorCode.InvalidState, "Cannot pause in current state", request.Metadata);
         }
 
-        await PublishDomainEventsAndSave(wo, context.CancellationToken);
-        return SuccessResponse(wo.Id, request.Metadata);
+        return await PublishAndSaveWithIdempotency(wo, request.Metadata, context.CancellationToken);
     }
 
     public override async Task<CommandResponse> SubmitCompletionProof(
@@ -77,8 +75,7 @@ public sealed class WorkOrderCommandGrpcService : WorkOrderCommandService.WorkOr
             return ErrorResponse(ErrorCode.InvalidState, "Cannot complete in current state", request.Metadata);
         }
 
-        await PublishDomainEventsAndSave(wo, context.CancellationToken);
-        return SuccessResponse(wo.Id, request.Metadata);
+        return await PublishAndSaveWithIdempotency(wo, request.Metadata, context.CancellationToken);
     }
 
     public override Task<CommandResponse> CreateWorkOrder(CreateWorkOrderRequest request, ServerCallContext context)
@@ -109,24 +106,66 @@ public sealed class WorkOrderCommandGrpcService : WorkOrderCommandService.WorkOr
             return ErrorResponse(ErrorCode.InvalidState, "Invalid state transition", metadata);
         }
 
-        await PublishDomainEventsAndSave(wo!, context.CancellationToken);
-        return SuccessResponse(wo!.Id, metadata);
+        return await PublishAndSaveWithIdempotency(wo!, metadata, context.CancellationToken);
     }
 
-    // SKELETON: real version stores processed idempotency keys + responses in a table.
     private async Task<(WorkOrderAggregate?, CommandResponse?)> LoadAndCheckIdempotency(
         string workOrderId, CommandMetadata metadata, ServerCallContext context)
     {
         if (!Guid.TryParse(workOrderId, out var id))
             return (null, ErrorResponse(ErrorCode.Validation, "Invalid work_order_id", metadata));
 
+        if (!string.IsNullOrEmpty(metadata.IdempotencyKey))
+        {
+            var existing = await _db.ProcessedIdempotencyKeys
+                .AsNoTracking()
+                .FirstOrDefaultAsync(k => k.Key == metadata.IdempotencyKey, context.CancellationToken);
+
+            if (existing is not null)
+            {
+                return (null, new CommandResponse
+                {
+                    Success = existing.Success,
+                    ErrorCode = (Smartcity.Common.V1.ErrorCode)existing.ErrorCode,
+                    Message = existing.Message,
+                    EntityId = existing.EntityId,
+                    RequestId = metadata.IdempotencyKey,
+                    ProcessedAtUtc = existing.ProcessedAtUtc,
+                });
+            }
+        }
+
         var wo = await _db.WorkOrders
+            .Include(w => w.StatusHistory)
             .FirstOrDefaultAsync(w => w.Id == id, context.CancellationToken);
 
         if (wo is null)
             return (null, ErrorResponse(ErrorCode.NotFound, "Work order not found", metadata));
 
         return (wo, null);
+    }
+
+    private async Task<CommandResponse> PublishAndSaveWithIdempotency(
+        WorkOrderAggregate wo, CommandMetadata metadata, CancellationToken ct)
+    {
+        var response = SuccessResponse(wo.Id, metadata);
+
+        if (!string.IsNullOrEmpty(metadata.IdempotencyKey))
+        {
+            _db.ProcessedIdempotencyKeys.Add(new ProcessedIdempotencyKey
+            {
+                Key = metadata.IdempotencyKey,
+                Success = response.Success,
+                ErrorCode = (int)response.ErrorCode,
+                Message = response.Message,
+                EntityId = response.EntityId,
+                ProcessedAtUtc = response.ProcessedAtUtc,
+                CreatedAt = DateTimeOffset.UtcNow,
+            });
+        }
+
+        await PublishDomainEventsAndSave(wo, ct);
+        return response;
     }
 
     private async Task PublishDomainEventsAndSave(WorkOrderAggregate wo, CancellationToken ct)
@@ -157,6 +196,15 @@ public sealed class WorkOrderCommandGrpcService : WorkOrderCommandService.WorkOr
         }
 
         wo.ClearDomainEvents();
+
+        foreach (var entry in wo.StatusHistory)
+        {
+            var tracked = _db.ChangeTracker.Entries<StatusHistoryEntry>()
+                .FirstOrDefault(e => e.Entity.Id == entry.Id);
+            if (tracked is null)
+                _db.Entry(entry).State = EntityState.Added;
+        }
+
         await _db.SaveChangesAsync(ct);
     }
 
