@@ -32,7 +32,8 @@ public sealed class FrameReceivedConsumer : IConsumer<FrameReceived>
         var frame = context.Message;
         _logger.LogInformation("Processing frame {FrameId} from {VehicleId}", frame.FrameId, frame.VehicleId);
 
-        var response = await _httpClient.GetAsync(frame.ImageUrl, context.CancellationToken);
+        var downloadUrl = RewriteToInternalUrl(frame.ImageUrl);
+        var response = await _httpClient.GetAsync(downloadUrl, context.CancellationToken);
         if (!response.IsSuccessStatusCode)
         {
             _logger.LogWarning("Failed to download image at {ImageUrl}: HTTP {StatusCode}", frame.ImageUrl, (int)response.StatusCode);
@@ -106,6 +107,18 @@ public sealed class FrameReceivedConsumer : IConsumer<FrameReceived>
         await context.PublishFollowUp(detection);
         _logger.LogInformation("Detection {DetectionId} type={Type} confidence={Confidence} for frame {FrameId}",
             detectionId, type, detection.Confidence, frame.FrameId);
+    }
+
+    private string RewriteToInternalUrl(string imageUrl)
+    {
+        var internalBase = _config["S3:InternalBaseUrl"];
+        var publicBase = _config["S3:PublicBaseUrl"];
+        if (!string.IsNullOrEmpty(internalBase) && !string.IsNullOrEmpty(publicBase)
+            && imageUrl.StartsWith(publicBase, StringComparison.OrdinalIgnoreCase))
+        {
+            return internalBase + imageUrl[publicBase.Length..];
+        }
+        return imageUrl;
     }
 
     private static T PickRandom<T>(Random rng, T[] items) => items[rng.Next(items.Length)];

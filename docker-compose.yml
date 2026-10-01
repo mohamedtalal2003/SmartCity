@@ -100,6 +100,223 @@ services:
       - "8081:80"       # UI  http://localhost:8081
     volumes: [seqdata:/data]
 
+  # ─── Application services (docker compose --profile apps up -d --build) ───
+
+  gateway:
+    build:
+      context: .
+      dockerfile: src/Gateway/SmartCity.ApiGateway/Dockerfile
+      network: host  # Cloud session only: NuGet restore needs the host proxy. Remove for local/CI builds.
+    profiles: ["apps"]
+    ports:
+      - "5000:5000"
+    environment:
+      Ports__Http: "5000"
+      GrpcServices__Pothole: "http://pothole:5231"
+      GrpcServices__CostCalculation: "http://costcalculation:5271"
+      GrpcServices__WorkOrder: "http://workorder:5281"
+      GrpcServices__Notification: "http://notification:5291"
+      Redis__ConnectionString: "redis:6379"
+      Seq__ServerUrl: "http://seq:5341"
+    depends_on:
+      rabbitmq: { condition: service_healthy }
+      redis: { condition: service_healthy }
+
+  vehiclecommunication:
+    build:
+      context: .
+      dockerfile: src/Services/VehicleCommunication/SmartCity.VehicleCommunication/Dockerfile
+      network: host  # Cloud session only: NuGet restore needs the host proxy. Remove for local/CI builds.
+    profiles: ["apps"]
+    ports:
+      - "5210:5210"
+    environment:
+      Ports__Http: "5210"
+      RabbitMQ__Host: "rabbitmq"
+      RabbitMQ__Username: "${RABBITMQ_USER:-smartcity}"
+      RabbitMQ__Password: "${RABBITMQ_PASSWORD:-smartcity}"
+      Mqtt__Host: "emqx"
+      S3__ServiceUrl: "http://s3:8333"
+      S3__ForcePathStyle: "true"
+      S3__Region: "us-east-1"
+      S3__AccessKey: "dev"
+      S3__SecretKey: "dev"
+      S3__PublicBaseUrl: "http://localhost:9000"
+      Redis__ConnectionString: "redis:6379"
+      Seq__ServerUrl: "http://seq:5341"
+    depends_on:
+      rabbitmq: { condition: service_healthy }
+      emqx: { condition: service_healthy }
+      s3: { condition: service_healthy }
+      redis: { condition: service_healthy }
+
+  aidetection:
+    build:
+      context: .
+      dockerfile: src/Services/AiDetection/SmartCity.AiDetection/Dockerfile
+      network: host  # Cloud session only: NuGet restore needs the host proxy. Remove for local/CI builds.
+    profiles: ["apps"]
+    ports:
+      - "5220:5220"
+    environment:
+      Ports__Http: "5220"
+      RabbitMQ__Host: "rabbitmq"
+      RabbitMQ__Username: "${RABBITMQ_USER:-smartcity}"
+      RabbitMQ__Password: "${RABBITMQ_PASSWORD:-smartcity}"
+      FakeAi__ForceDetection: "true"
+      S3__PublicBaseUrl: "http://localhost:9000"
+      S3__InternalBaseUrl: "http://s3:8333"
+      Seq__ServerUrl: "http://seq:5341"
+    depends_on:
+      rabbitmq: { condition: service_healthy }
+
+  pothole:
+    build:
+      context: .
+      dockerfile: src/Services/Pothole/SmartCity.Pothole.Api/Dockerfile
+      network: host  # Cloud session only: NuGet restore needs the host proxy. Remove for local/CI builds.
+    profiles: ["apps"]
+    ports:
+      - "5230:5230"
+      - "5231:5231"
+    environment:
+      Ports__Http: "5230"
+      Ports__Grpc: "5231"
+      ConnectionStrings__Db: "Host=postgres;Port=5432;Database=pothole_db;Username=pothole_svc;Password=pothole_svc"
+      RabbitMQ__Host: "rabbitmq"
+      RabbitMQ__Username: "${RABBITMQ_USER:-smartcity}"
+      RabbitMQ__Password: "${RABBITMQ_PASSWORD:-smartcity}"
+      Seq__ServerUrl: "http://seq:5341"
+    depends_on:
+      postgres: { condition: service_healthy }
+      rabbitmq: { condition: service_healthy }
+
+  inventory:
+    build:
+      context: .
+      dockerfile: src/Services/Inventory/SmartCity.Inventory.Api/Dockerfile
+      network: host  # Cloud session only: NuGet restore needs the host proxy. Remove for local/CI builds.
+    profiles: ["apps"]
+    ports:
+      - "5240:5240"
+      - "5241:5241"
+    environment:
+      Ports__Http: "5240"
+      Ports__Grpc: "5241"
+      ConnectionStrings__Db: "Host=postgres;Port=5432;Database=inventory_db;Username=inventory_svc;Password=inventory_svc"
+      RabbitMQ__Host: "rabbitmq"
+      RabbitMQ__Username: "${RABBITMQ_USER:-smartcity}"
+      RabbitMQ__Password: "${RABBITMQ_PASSWORD:-smartcity}"
+      Seq__ServerUrl: "http://seq:5341"
+    depends_on:
+      postgres: { condition: service_healthy }
+      rabbitmq: { condition: service_healthy }
+
+  violation:
+    build:
+      context: .
+      dockerfile: src/Services/Violation/SmartCity.Violation.Api/Dockerfile
+      network: host  # Cloud session only: NuGet restore needs the host proxy. Remove for local/CI builds.
+    profiles: ["apps"]
+    ports:
+      - "5250:5250"
+      - "5251:5251"
+    environment:
+      Ports__Http: "5250"
+      Ports__Grpc: "5251"
+      ConnectionStrings__Db: "Host=postgres;Port=5432;Database=violation_db;Username=violation_svc;Password=violation_svc"
+      RabbitMQ__Host: "rabbitmq"
+      RabbitMQ__Username: "${RABBITMQ_USER:-smartcity}"
+      RabbitMQ__Password: "${RABBITMQ_PASSWORD:-smartcity}"
+      Seq__ServerUrl: "http://seq:5341"
+    depends_on:
+      postgres: { condition: service_healthy }
+      rabbitmq: { condition: service_healthy }
+
+  building:
+    build:
+      context: .
+      dockerfile: src/Services/Building/SmartCity.Building.Api/Dockerfile
+      network: host  # Cloud session only: NuGet restore needs the host proxy. Remove for local/CI builds.
+    profiles: ["apps"]
+    ports:
+      - "5260:5260"
+      - "5261:5261"
+    environment:
+      Ports__Http: "5260"
+      Ports__Grpc: "5261"
+      ConnectionStrings__Db: "Host=postgres;Port=5432;Database=building_db;Username=building_svc;Password=building_svc"
+      RabbitMQ__Host: "rabbitmq"
+      RabbitMQ__Username: "${RABBITMQ_USER:-smartcity}"
+      RabbitMQ__Password: "${RABBITMQ_PASSWORD:-smartcity}"
+      Seq__ServerUrl: "http://seq:5341"
+    depends_on:
+      postgres: { condition: service_healthy }
+      rabbitmq: { condition: service_healthy }
+
+  costcalculation:
+    build:
+      context: .
+      dockerfile: src/Services/CostCalculation/SmartCity.CostCalculation.Api/Dockerfile
+      network: host  # Cloud session only: NuGet restore needs the host proxy. Remove for local/CI builds.
+    profiles: ["apps"]
+    ports:
+      - "5270:5270"
+      - "5271:5271"
+    environment:
+      Ports__Http: "5270"
+      Ports__Grpc: "5271"
+      ConnectionStrings__Db: "Host=postgres;Port=5432;Database=costcalc_db;Username=costcalc_svc;Password=costcalc_svc"
+      RabbitMQ__Host: "rabbitmq"
+      RabbitMQ__Username: "${RABBITMQ_USER:-smartcity}"
+      RabbitMQ__Password: "${RABBITMQ_PASSWORD:-smartcity}"
+      Seq__ServerUrl: "http://seq:5341"
+    depends_on:
+      postgres: { condition: service_healthy }
+      rabbitmq: { condition: service_healthy }
+
+  workorder:
+    build:
+      context: .
+      dockerfile: src/Services/WorkOrder/SmartCity.WorkOrder.Api/Dockerfile
+      network: host  # Cloud session only: NuGet restore needs the host proxy. Remove for local/CI builds.
+    profiles: ["apps"]
+    ports:
+      - "5280:5280"
+      - "5281:5281"
+    environment:
+      Ports__Http: "5280"
+      Ports__Grpc: "5281"
+      ConnectionStrings__Db: "Host=postgres;Port=5432;Database=workorder_db;Username=workorder_svc;Password=workorder_svc"
+      RabbitMQ__Host: "rabbitmq"
+      RabbitMQ__Username: "${RABBITMQ_USER:-smartcity}"
+      RabbitMQ__Password: "${RABBITMQ_PASSWORD:-smartcity}"
+      Seq__ServerUrl: "http://seq:5341"
+    depends_on:
+      postgres: { condition: service_healthy }
+      rabbitmq: { condition: service_healthy }
+
+  notification:
+    build:
+      context: .
+      dockerfile: src/Services/Notification/SmartCity.Notification.Api/Dockerfile
+      network: host  # Cloud session only: NuGet restore needs the host proxy. Remove for local/CI builds.
+    profiles: ["apps"]
+    ports:
+      - "5290:5290"
+      - "5291:5291"
+    environment:
+      Ports__Http: "5290"
+      Ports__Grpc: "5291"
+      ConnectionStrings__Db: "Host=postgres;Port=5432;Database=notification_db;Username=notification_svc;Password=notification_svc"
+      RabbitMQ__Host: "rabbitmq"
+      RabbitMQ__Username: "${RABBITMQ_USER:-smartcity}"
+      RabbitMQ__Password: "${RABBITMQ_PASSWORD:-smartcity}"
+      Seq__ServerUrl: "http://seq:5341"
+    depends_on:
+      postgres: { condition: service_healthy }
+      rabbitmq: { condition: service_healthy }
+
 volumes:
   pgdata:
   rabbitdata:

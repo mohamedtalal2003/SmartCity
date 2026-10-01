@@ -1,0 +1,13 @@
+**/bin/
+**/obj/
+**/.run/
+**/node_modules/
+.git/
+.vs/
+.vscode/
+*.user
+*.suo
+tests/
+tools/
+docs/
+infra/
