@@ -53,12 +53,14 @@ services:
     # TIP: after the first successful pull, pin the version you got instead of :latest
     #      (docker image inspect chrislusf/seaweedfs --format '{{.RepoDigests}}').
     image: chrislusf/seaweedfs:latest
-    command: server -dir=/data -s3 -s3.port=8333
+    command: server -dir=/data -s3 -s3.port=8333 -s3.config=/etc/seaweedfs/s3.json
     ports:
       - "9000:8333"     # S3 API on localhost:9000 (same address the old MinIO setup used)
-    volumes: [s3data:/data]
-    # DEV ONLY: no S3 identities configured, so the API accepts anonymous requests and
-    # image URLs open directly in the browser. Real credentials come with production config.
+    volumes:
+      - s3data:/data
+      - ./infra/s3/s3.json:/etc/seaweedfs/s3.json:ro
+    # DEV ONLY: S3 identities in infra/s3/s3.json allow signed requests (dev/dev) and
+    # anonymous reads so image URLs open directly in the browser.
     # Buckets are created by the s3-init container below.
     healthcheck:
       # 127.0.0.1, not localhost: in the container localhost resolves to ::1 first, and the
