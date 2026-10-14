@@ -63,6 +63,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SmartCity.Pothole.Domain.Te
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SmartCity.Pothole.Application", "src\Services\Pothole\SmartCity.Pothole.Application\SmartCity.Pothole.Application.csproj", "{3DCF84F4-C2D4-445B-A892-237FB8699BA0}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SmartCity.Pothole.Infrastructure", "src\Services\Pothole\SmartCity.Pothole.Infrastructure\SmartCity.Pothole.Infrastructure.csproj", "{1CDDBCC9-8C50-4B20-9EC6-BB32579AEB82}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -156,6 +158,10 @@ Global
 		{3DCF84F4-C2D4-445B-A892-237FB8699BA0}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3DCF84F4-C2D4-445B-A892-237FB8699BA0}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{3DCF84F4-C2D4-445B-A892-237FB8699BA0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1CDDBCC9-8C50-4B20-9EC6-BB32579AEB82}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1CDDBCC9-8C50-4B20-9EC6-BB32579AEB82}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1CDDBCC9-8C50-4B20-9EC6-BB32579AEB82}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1CDDBCC9-8C50-4B20-9EC6-BB32579AEB82}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{3E84739A-983E-4722-A17E-32B3700303C8} = {9F436186-8035-408A-8F57-0958E443BFA8}
@@ -180,5 +186,6 @@ Global
 		{F575AD8E-7DD2-437C-B8E9-A7C207F9C549} = {59EAA5D2-9CCC-42A5-B3C8-C3907ADF72B4}
 		{4D979DF6-CF70-4A72-8853-2ED8AF12064A} = {D82D4874-0E7E-4551-87BA-D595EF7A4DB7}
 		{3DCF84F4-C2D4-445B-A892-237FB8699BA0} = {59EAA5D2-9CCC-42A5-B3C8-C3907ADF72B4}
+		{1CDDBCC9-8C50-4B20-9EC6-BB32579AEB82} = {59EAA5D2-9CCC-42A5-B3C8-C3907ADF72B4}
 	EndGlobalSection
 EndGlobal

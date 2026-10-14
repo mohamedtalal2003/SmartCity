@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Description>Pothole infrastructure: EF Core + PostGIS persistence, the Istanbul area seeder, and the MassTransit publisher.</Description>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL.NetTopologySuite" />
+    <PackageReference Include="NetTopologySuite.IO.GeoJSON4STJ" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../SmartCity.Pothole.Application/SmartCity.Pothole.Application.csproj" />
+    <ProjectReference Include="../../../BuildingBlocks/SmartCity.BuildingBlocks/SmartCity.BuildingBlocks.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- The Istanbul districts and neighborhoods (OpenStreetMap), read once by AdminAreaSeeder. -->
+    <None Update="Persistence/SeedData/*.geojson" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>
