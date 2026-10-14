@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Description>Pothole domain: the pothole aggregate, its observations and the repair estimator. No EF, no MassTransit, no ASP.NET.</Description>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- Only for the shared enums (SeverityLevel, DamageStage, DetectionType, PriorityLevel). No events, no protos. -->
+    <ProjectReference Include="../../../SmartCity.Contracts/SmartCity.Contracts.csproj" />
+  </ItemGroup>
+</Project>
