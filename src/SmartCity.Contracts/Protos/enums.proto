@@ -116,6 +116,14 @@ enum CancelReason {
   CANCEL_REASON_RESOLVED_OTHERWISE = 3; // fixed another way, e.g. street repaved
 }
 
+// What the AI saw at a place that waits for repair confirmation.
+enum VerificationResult {
+  VERIFICATION_RESULT_UNSPECIFIED = 0;
+  VERIFICATION_RESULT_GONE = 1;         // the repair looks done
+  VERIFICATION_RESULT_STILL_THERE = 2;  // the damage is still there
+  VERIFICATION_RESULT_NOT_VISIBLE = 3;  // could not tell; changes nothing
+}
+
 // Reason a crew paused work — kept coarse on purpose.
 enum PauseReason {
   PAUSE_REASON_UNSPECIFIED = 0;

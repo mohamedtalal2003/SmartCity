@@ -30,6 +30,15 @@ public enum CancelReason
     ResolvedOtherwise = 3   // fixed another way, e.g. the whole street was repaved
 }
 
+/// <summary>What the AI saw at a place that waits for repair confirmation.</summary>
+public enum VerificationResult
+{
+    Unspecified = 0,
+    Gone = 1,           // the damage is gone: the repair looks done
+    StillThere = 2,     // the damage is still there
+    NotVisible = 3      // could not tell (parked car, night, rain); changes nothing
+}
+
 public enum PauseReason
 {
     Unspecified = 0,
