@@ -179,6 +179,8 @@ public sealed class WorkOrderCommandGrpcService : WorkOrderCommandService.WorkOr
                     CorrelationId = wo.CorrelationId,
                     WorkOrderId = wo.Id,
                     TicketNumber = wo.TicketNumber,
+                    // SKELETON: TicketSequence stays 0 and CancelReason / DuplicateOfEntityId stay empty.
+                    // The aggregate has no change counter and no Cancel transition yet.
                     SourceDetectionId = wo.SourceDetectionId,
                     SourceEntityId = wo.SourceEntityId,
                     SourceEntityType = wo.SourceEntityType,

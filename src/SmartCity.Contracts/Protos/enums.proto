@@ -89,6 +89,15 @@ enum WorkOrderStatus {
   WORK_ORDER_STATUS_EN_ROUTE = 7;       // crew traveling to site
   WORK_ORDER_STATUS_ON_SITE = 8;        // crew arrived and working
   WORK_ORDER_STATUS_PAUSED = 9;         // work paused (materials, weather, etc.)
+  WORK_ORDER_STATUS_CANCELLED = 10;     // closed without a repair; see CancelReason
+}
+
+// Why a ticket was cancelled. The source item closes with this reason.
+enum CancelReason {
+  CANCEL_REASON_UNSPECIFIED = 0;
+  CANCEL_REASON_FALSE_POSITIVE = 1;     // the AI was wrong; nothing is there
+  CANCEL_REASON_DUPLICATE = 2;          // the same item already has a ticket
+  CANCEL_REASON_RESOLVED_OTHERWISE = 3; // fixed another way, e.g. street repaved
 }
 
 // Reason a crew paused work — kept coarse on purpose.

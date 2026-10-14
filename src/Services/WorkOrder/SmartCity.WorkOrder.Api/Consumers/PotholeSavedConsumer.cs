@@ -64,6 +64,8 @@ public sealed class PotholeSavedConsumer : IConsumer<PotholeSaved>
                     CorrelationId = msg.CorrelationId,
                     WorkOrderId = created.WorkOrder.Id,
                     TicketNumber = created.WorkOrder.TicketNumber,
+                    // SKELETON: TicketSequence stays 0. The aggregate has no change counter yet; the real
+                    // version adds one (1 at creation, +1 per change) and sends it here.
                     SourceDetectionId = msg.SourceDetectionId,
                     SourceEntityId = msg.PotholeId,
                     SourceEntityType = SourceEntityType.RoadDamage,

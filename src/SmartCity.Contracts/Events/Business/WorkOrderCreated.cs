@@ -6,12 +6,13 @@ namespace SmartCity.Contracts.Events.Business;
 /// <summary>
 /// Published by Work Order when a ticket is created (automatically from a saved
 /// detection, or manually by an officer).
-/// Subscribers: Notification
+/// Subscribers: Notification, Pothole (display-only repair status)
 /// </summary>
 public record WorkOrderCreated : IntegrationEvent
 {
     public Guid WorkOrderId { get; init; }
     public string TicketNumber { get; init; } = default!;  // "WO-2026-000123"
+    public long TicketSequence { get; init; }              // 1 at creation, +1 on every change of this ticket; orders its messages
     public Guid SourceDetectionId { get; init; }           // Guid.Empty when created manually
 
     public Guid SourceEntityId { get; init; }
