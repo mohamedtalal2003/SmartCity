@@ -1,0 +1,409 @@
+<title>Pothole Service Data</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* Layout: one reading column, diagrams in their own LTR scroll boxes, same identity as the other design pages */
+:root {
+  --bg: #F5F6F3; --surface: #FFFFFF; --ink: #22262A; --quiet: #5C636A; --rule: #D8DAD5;
+  --sign: #E3A80C; --sign-ink: #22262A;
+  --done: #2E7A4C; --prop: #2B65A6; --open: #A85A16; --k: #7446A3;
+  --font-body: "IBM Plex Sans", "Segoe UI", Tahoma, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #15181B; --surface: #1D2125; --ink: #E7E9EB; --quiet: #A2A8AE; --rule: #33393E;
+    --sign: #F0BC2C; --sign-ink: #15181B;
+    --done: #63C08A; --prop: #73A6E2; --open: #E69A57; --k: #B48DE2;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #15181B; --surface: #1D2125; --ink: #E7E9EB; --quiet: #A2A8AE; --rule: #33393E;
+  --sign: #F0BC2C; --sign-ink: #15181B;
+  --done: #63C08A; --prop: #73A6E2; --open: #E69A57; --k: #B48DE2;
+  color-scheme: dark;
+}
+body { background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 17px; line-height: 1.8; }
+.page { max-width: 900px; margin: 0 auto; padding-inline: 20px; padding-block: 0 80px; }
+code { font-family: var(--font-mono); font-size: .86em; direction: ltr; unicode-bidi: isolate; background: color-mix(in srgb, var(--rule) 45%, transparent); padding: .05em .35em; border-radius: 4px; }
+header.top { padding-block: 52px 22px; border-bottom: 1px solid var(--rule); }
+h1 { font-size: 2rem; line-height: 1.35; margin: 0 0 10px; text-wrap: balance; }
+.date { color: var(--quiet); font-size: .95rem; margin: 0 0 16px; }
+.lead { font-size: 1.1rem; margin: 0 0 14px; }
+.steps { list-style: none; margin: 0 0 14px; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
+.steps li { border: 1.5px solid var(--rule); border-radius: 999px; padding: 2px 14px; font-size: .92rem; color: var(--quiet); }
+.steps li.now { border-color: var(--sign); color: var(--ink); font-weight: 600; background: color-mix(in srgb, var(--sign) 14%, transparent); }
+nav.toc ol { list-style: none; padding: 0; margin: 18px 0 0; display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: .95rem; }
+nav.toc a { color: var(--prop); text-decoration: none; }
+nav.toc a:focus-visible, a:focus-visible { outline: 2px solid var(--sign); outline-offset: 2px; border-radius: 3px; }
+section { padding-top: 40px; }
+h2 { font-size: 1.5rem; margin: 0 0 8px; padding-bottom: 10px; text-wrap: balance;
+  background-image: linear-gradient(to right, var(--sign) 0 28px, transparent 28px 40px, var(--sign) 40px 68px, transparent 68px);
+  background-repeat: no-repeat; background-position: left bottom; background-size: 100% 4px; }
+h3 { font-size: 1.15rem; margin: 26px 0 8px; }
+ul.plain, ol.plain { padding-inline-start: 1.2em; margin: 8px 0; }
+ul.plain li, ol.plain li { margin: 6px 0; }
+.tag { display: inline-block; font-size: .78rem; font-weight: 600; line-height: 1.5; padding: 0 .55em; border-radius: 999px; border: 1.5px solid currentColor; white-space: nowrap; margin-inline-start: .25em; }
+.tag.done { color: var(--done); } .tag.prop { color: var(--prop); } .tag.open { color: var(--open); } .tag.k { color: var(--k); } .tag.later { color: var(--quiet); }
+.diagram { direction: ltr; overflow-x: auto; background: var(--surface); border: 1px solid var(--rule); border-radius: 10px; padding: 14px; margin: 14px 0 6px; }
+.diagram pre.mermaid { margin: 0; background: transparent; }
+.cap { color: var(--quiet); font-size: .92rem; margin: 0 0 10px; }
+.tw { overflow-x: auto; margin: 14px 0; border: 1px solid var(--rule); border-radius: 8px; background: var(--surface); }
+table { border-collapse: collapse; width: 100%; font-size: .95rem; }
+th, td { text-align: start; padding: 9px 14px; border-bottom: 1px solid var(--rule); vertical-align: top; }
+th { font-weight: 600; color: var(--quiet); background: color-mix(in srgb, var(--rule) 30%, transparent); white-space: nowrap; }
+tr:last-child td { border-bottom: 0; }
+td.c { white-space: nowrap; }
+.split { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); margin: 14px 0; }
+.split > div { min-width: 0; background: var(--surface); border: 1px solid var(--rule); border-radius: 8px; padding: 12px 16px; }
+.split h4 { margin: 0 0 4px; font-size: 1rem; }
+.split p { margin: 0; color: var(--quiet); font-size: .95rem; }
+footer.end { margin-top: 52px; padding-top: 16px; border-top: 1px solid var(--rule); color: var(--quiet); font-size: .92rem; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+</style>
+
+
+<div class="page" dir="ltr" lang="en">
+<header class="top">
+  <h1>Pothole Service Data</h1>
+  <p class="date">Last updated: October 14, 2026. Based on the Pothole design page and the October 10 and October 14 decisions.</p>
+  <ol class="steps" aria-label="Design steps">
+    <li>1. Scenarios ✓</li><li>2. Endpoints ✓</li><li class="now">3. Classes</li><li class="now">4. Tables</li><li>5. Tests</li>
+  </ol>
+  <p class="lead">This page shows the service in two ways: the classes (the code inside the domain) and the tables (the database). The pothole is the aggregate root. Every time it is seen, a new observation is saved with it in the same transaction.</p>
+  <nav class="toc" aria-label="Contents"><ol>
+    <li><a href="#idea">The idea</a></li><li><a href="#aggregate">Classes: the pothole</a></li><li><a href="#around">Classes: what is around it</a></li>
+    <li><a href="#enums">The enums</a></li><li><a href="#erd">Tables</a></li><li><a href="#indexes">Constraints and indexes</a></li>
+    <li><a href="#flow">How data is saved</a></li><li><a href="#mapping">From class to table</a></li><li><a href="#open">Open items</a></li>
+  </ol></nav>
+</header>
+
+<section id="idea">
+  <h2>The idea</h2>
+  <div class="split">
+    <div><h4>Main record (<code>potholes</code>)</h4><p>One row per pothole, with its current state: open or closed, the latest severity and size, and the repair status for display. Only this part gets updated.</p></div>
+    <div><h4>The observations</h4><p>A new row each time the pothole is seen, corrected or checked. Rows are only added. They are never updated or deleted.</p></div>
+  </div>
+  <p>Think of a patient's file in a hospital: the main record is the cover that shows the condition, and every X-ray goes inside the file. The pothole has no repair steps. Those all live in Work Order. The pothole only keeps a display-only copy of the ticket status, and no rule depends on it.</p>
+</section>
+
+<section id="aggregate">
+  <h2>Classes: the pothole and what is inside it</h2>
+  <div class="diagram"><pre class="mermaid">
+classDiagram
+direction LR
+class Pothole {
+  &lt;&lt;Aggregate Root&gt;&gt;
+  +Guid Id
+  +GeoPoint Location
+  +DetectionType DamageType
+  +int DistrictId
+  +int NeighborhoodId
+  +string RoadName
+  +PotholeStatus Status
+  +ClosedReason ClosedReason
+  +DateTimeOffset ClosedAt
+  +Guid DuplicateOfId
+  +SeverityLevel CurrentSeverity
+  +DamageStage CurrentStage
+  +decimal AreaM2
+  +decimal DepthCm
+  +decimal Confidence
+  +CostEstimate Estimate
+  +PotholeSource Source
+  +int SightingsCount
+  +Guid WorkOrderId
+  +string RepairStatus
+  +long RepairStatusSeq
+  +DateTimeOffset FirstSeenAt
+  +DateTimeOffset LastSeenAt
+  +long RowVersion
+  +FromDetection(detection, estimate) Pothole
+  +AddedByOfficer(report, estimate, actor) Pothole
+  +AddSighting(detection, estimate) bool
+  +AddReport(report, actor)
+  +Correct(values, reason, estimate, actor)
+  +RecordVerification(result, imageUrl, seenAt)
+  +ApplyRepairStatus(workOrderId, status, ticketSequence)
+  +Close(reason, duplicateOfId, at)
+  +IsOpen() bool
+}
+class Observation {
+  &lt;&lt;Entity&gt;&gt;
+  +Guid Id
+  +Guid SourceDetectionId
+  +ObservationKind Kind
+  +SeverityLevel Severity
+  +DamageStage Stage
+  +DetectionType DamageType
+  +decimal AreaM2
+  +decimal DepthCm
+  +decimal Confidence
+  +RepairCheck VerificationResult
+  +string ImageUrl
+  +string Notes
+  +DateTimeOffset SeenAt
+  +string CreatedBy
+}
+class CostEstimate {
+  &lt;&lt;Value Object&gt;&gt;
+  +decimal Materials
+  +decimal Labor
+  +decimal Equipment
+  +decimal Total
+  +string Currency
+}
+class GeoPoint {
+  &lt;&lt;Value Object&gt;&gt;
+  +double Latitude
+  +double Longitude
+}
+class Actor {
+  &lt;&lt;Value Object&gt;&gt;
+  +string UserId
+  +ActorRole Role
+  +List~District~ Districts
+}
+Pothole "1" *-- "many" Observation
+Pothole *-- CostEstimate
+Pothole *-- GeoPoint
+Pothole ..> Actor : officer commands
+</pre></div>
+  <p class="cap">A solid line (◆) means "part of the pothole, saved with it". A dashed line means "only uses it".</p>
+
+  <h3>What each method does</h3>
+  <div class="tw"><table>
+    <thead><tr><th>Method</th><th>Called from</th><th>What it does</th><th>Emits</th></tr></thead>
+    <tbody>
+      <tr><td class="c"><code>FromDetection</code></td><td>An AI detection with no open pothole nearby</td><td>A new <code>Open</code> pothole, and its first observation of kind "AI detection"</td><td><code>PotholeSaved</code> (new)</td></tr>
+      <tr><td class="c"><code>AddedByOfficer</code></td><td>The officer added a pothole (P1)</td><td>A new <code>Open</code> pothole, and an observation of kind "officer add". The confidence check and the 30-day rule do not apply to it</td><td><code>PotholeSaved</code> (new)</td></tr>
+      <tr><td class="c"><code>AddSighting</code></td><td>A detection next to an open pothole</td><td>A new observation, and the main record is updated. Returns <code>true</code> if the severity or the stage changed</td><td><code>PotholeSaved</code> (changed), only if <code>true</code></td></tr>
+      <tr><td class="c"><code>AddReport</code></td><td>The officer added a report next to an open pothole</td><td>An observation of kind "officer add" on the existing pothole</td><td>None</td></tr>
+      <tr><td class="c"><code>Correct</code></td><td>The officer corrected the data (P2)</td><td>An observation of kind "correction" with the reason, and the main record and the estimate are updated. Rejected if the pothole is closed</td><td><code>PotholeSaved</code> (corrected)</td></tr>
+      <tr><td class="c"><code>RecordVerification</code></td><td>The <code>RepairVerificationObserved</code> message</td><td>An observation of kind "verification pass" with the result and the image. Does not change the status</td><td>None</td></tr>
+      <tr><td class="c"><code>ApplyRepairStatus</code></td><td>Any message from Work Order</td><td>Writes the ticket status into the display-only copy, but only if the pothole is open and <code>ticket_sequence</code> is bigger than the one it has. If the pothole is closed, the message is ignored</td><td>None</td></tr>
+      <tr><td class="c"><code>Close</code></td><td>The ticket is <code>Completed</code> or <code>Cancelled</code>, or <code>DetectionDismissed</code></td><td>The pothole becomes <code>Closed</code> with the reason, after <code>ApplyRepairStatus</code> writes the last repair status. If it is already closed, it does nothing</td><td>None</td></tr>
+    </tbody>
+  </table></div>
+  <p>Every method increases <code>RowVersion</code> by one. So if two writers change the same pothole at the same moment, the second one is rejected. If any rule is broken, the method throws an exception and nothing changes.</p>
+</section>
+
+<section id="around">
+  <h2>Classes: what is around the pothole</h2>
+  <div class="diagram"><pre class="mermaid">
+classDiagram
+direction LR
+class Pothole {
+  &lt;&lt;Aggregate Root&gt;&gt;
+}
+class PotholeMatcher {
+  &lt;&lt;Domain Service&gt;&gt;
+  +FindOpenNearby(location, radiusM) Pothole
+  +IsSuppressed(location, now) bool
+}
+class PotholeEstimator {
+  &lt;&lt;Static Class&gt;&gt;
+  +Estimate(severity, stage, areaM2, depthCm, prices) CostEstimate
+}
+class RecurringSpot {
+  &lt;&lt;Read Model&gt;&gt;
+  +Guid Id
+  +GeoPoint Location
+  +District District
+  +List~Guid~ PotholeIds
+  +int PotholeCount
+  +DateTimeOffset FirstSeenAt
+  +DateTimeOffset LastSeenAt
+  +DateTimeOffset ComputedAt
+}
+class RecurringSpotsJob {
+  &lt;&lt;Background Job&gt;&gt;
+  +Run(lookback, radiusM)
+}
+PotholeMatcher ..> Pothole : searches open ones
+Pothole ..> PotholeEstimator
+RecurringSpotsJob ..> Pothole : reads all
+RecurringSpotsJob ..> RecurringSpot : writes
+</pre></div>
+  <ul class="plain">
+    <li><strong>Matching (<code>PotholeMatcher</code>):</strong> Looks for an <code>Open</code> pothole within 3 meters only. The number is in the config and can be changed. The <code>IsSuppressed</code> method tells if a pothole in this place was closed as a "mistake" less than 30 days ago. In that case the AI detection is only saved as an observation on that pothole.</li>
+    <li><strong>The estimator (<code>PotholeEstimator</code>):</strong> Pothole's own static class. It is called when a pothole is created or when its severity or stage changes. The prices come from the config and are passed in. Inventory and Building will have their own estimators, because each kind of thing is repaired in a different way. Only the shape of the result (<code>CostEstimate</code>) is shared, through the Contracts.</li>
+    <li><strong>The dismissed detection:</strong> Has no table. The <code>DetectionDismissed</code> message has the pothole id. The pothole always exists, because it is created before the officer sees the detection. So Pothole closes it right away. <span class="tag done">Decided</span></li>
+    <li><strong>Recurring spots (<code>RecurringSpot</code>):</strong> Not part of the pothole. The job computes them and writes them again from scratch each time. They are for statistics only (P17).</li>
+  </ul>
+</section>
+
+<section id="enums">
+  <h2>The enums</h2>
+  <div class="tw"><table>
+    <thead><tr><th>Name</th><th>Values</th><th>Where</th></tr></thead>
+    <tbody>
+      <tr><td class="c"><code>PotholeStatus</code></td><td><code>Open</code>, <code>Closed</code>, <code>Merged</code> (later)</td><td>Contracts <span class="tag k">New</span></td></tr>
+      <tr><td class="c"><code>ClosedReason</code></td><td><code>Repaired</code>, <code>FalsePositive</code>, <code>Duplicate</code>, <code>ResolvedOtherwise</code></td><td>Contracts <span class="tag k">New</span></td></tr>
+      <tr><td class="c"><code>ObservationKind</code></td><td><code>AiDetection</code>, <code>OfficerAdd</code>, <code>Correction</code>, <code>VerificationPass</code></td><td>Inside the service</td></tr>
+      <tr><td class="c"><code>RepairCheck</code></td><td><code>Gone</code>, <code>Present</code>, <code>Unclear</code></td><td>Contracts, the same one as in Work Order <span class="tag k">New</span></td></tr>
+      <tr><td class="c"><code>PotholeSource</code></td><td><code>Ai</code>, <code>Officer</code>, <code>CitizenReport</code></td><td>Contracts <span class="tag k">New</span></td></tr>
+      <tr><td class="c"><code>SavedReason</code></td><td><code>New</code>, <code>Changed</code>, <code>Corrected</code></td><td>Contracts, in <code>PotholeSaved</code> <span class="tag k">New</span></td></tr>
+      <tr><td class="c"><code>DamageStage</code></td><td>The stages in the Turkish file</td><td>Contracts, already exists</td></tr>
+      <tr><td class="c"><code>SeverityLevel</code></td><td><code>Low</code>, <code>Medium</code>, <code>High</code>, <code>Critical</code></td><td>Contracts, already exists</td></tr>
+      <tr><td class="c"><code>DetectionType</code></td><td>The road damage types: <code>Pothole</code>, <code>RoadCrack</code>, <code>SurfaceDamage</code></td><td>Contracts, already exists</td></tr>
+    </tbody>
+  </table></div>
+  <p>The <code>repair_status</code> column is plain text, not an enum. So if Work Order adds a new status, Pothole does not break.</p>
+</section>
+
+<section id="erd">
+  <h2>Tables</h2>
+  <p>4 tables for the service itself, plus the MassTransit tables (the inbox and the outbox), which are created automatically. All tables are in <code>pothole_db</code> only.</p>
+  <div class="diagram"><pre class="mermaid">
+erDiagram
+  potholes ||--o{ observations : "sightings"
+  potholes |o--o{ potholes : "duplicate of"
+  recurring_spots }o..o{ potholes : "pothole_ids"
+  admin_areas ||--o{ potholes : "district"
+  admin_areas |o--o{ admin_areas : "parent"
+
+  potholes {
+    uuid id PK
+    geography location "Point 4326"
+    varchar damage_type "Pothole, RoadCrack, SurfaceDamage"
+    int district_id FK
+    int neighborhood_id FK
+    varchar road_name
+    varchar status "Open, Closed, Merged"
+    varchar closed_reason "Repaired, FalsePositive, Duplicate, ResolvedOtherwise"
+    timestamptz closed_at
+    uuid duplicate_of_id FK
+    varchar current_severity "Low, Medium, High, Critical"
+    varchar current_stage
+    numeric area_m2 "null = no measurement"
+    numeric depth_cm
+    numeric confidence
+    numeric est_materials
+    numeric est_labor
+    numeric est_equipment
+    numeric est_total
+    char est_currency "TRY"
+    varchar source "Ai, Officer, CitizenReport"
+    int sightings_count
+    uuid work_order_id "display copy"
+    varchar repair_status "display copy"
+    bigint repair_status_seq "last ticket_sequence"
+    timestamptz first_seen_at
+    timestamptz last_seen_at
+    bigint row_version "concurrency"
+  }
+  observations {
+    uuid id PK
+    uuid pothole_id FK
+    uuid source_detection_id UK "null for officer rows"
+    varchar kind "AiDetection, OfficerAdd, Correction, VerificationPass"
+    varchar severity
+    varchar stage
+    varchar damage_type
+    numeric area_m2
+    numeric depth_cm
+    numeric confidence
+    varchar verification_result "Gone, Present, Unclear"
+    varchar image_url
+    text notes "reason for a correction"
+    timestamptz seen_at
+    varchar created_by
+  }
+  recurring_spots {
+    uuid id PK
+    geography location
+    varchar district
+    uuid_array pothole_ids
+    int pothole_count
+    timestamptz first_seen_at
+    timestamptz last_seen_at
+    timestamptz computed_at
+  }
+  admin_areas {
+    int id PK
+    varchar name
+    varchar level "district or neighborhood"
+    int parent_id FK
+    geometry geometry "MultiPolygon 4326"
+  }
+</pre></div>
+  <ul class="plain">
+    <li><strong>Districts and neighborhoods (<code>admin_areas</code>):</strong> The districts (<code>admin_level</code> 6, ilçe) and neighborhoods (<code>admin_level</code> 8, mahalle) of Istanbul, loaded once from OpenStreetMap GeoJSON. When a pothole is created, it gets <code>district_id</code> and <code>neighborhood_id</code> from a point-in-polygon check (<code>Intersects</code>).</li>
+  </ul>
+  <h3>Tables not in the diagram</h3>
+  <ul class="plain">
+    <li><code>processed_idempotency_keys</code>: so that an officer command sent twice returns the same response.</li>
+    <li><code>inbox_state</code>, <code>outbox_message</code> and <code>outbox_state</code>: MassTransit creates and manages them by itself.</li>
+  </ul>
+  <p>The <code>sightings_count</code> column counts AI detections only, meaning how many times vehicles saw the pothole. Corrections, officer adds and verification passes do not increase it. <span class="tag done">Decided</span> It exists so the "how many times seen" filter works without counting the observations every time. The <code>confidence</code> on the main record is the confidence of the last detection.</p>
+</section>
+
+<section id="indexes">
+  <h2>Constraints and indexes</h2>
+  <p>These constraints protect the rules even if there is a bug in the code.</p>
+  <div class="tw"><table>
+    <thead><tr><th>Table</th><th>Constraint or index</th><th>What it protects</th></tr></thead>
+    <tbody>
+      <tr><td class="c"><code>potholes</code></td><td>Partial GIST on <code>location</code> when <code>status = Open</code></td><td>Fast matching: "Is there an open pothole within 3 meters?"</td></tr>
+      <tr><td class="c"><code>potholes</code></td><td>Partial GIST on <code>location</code> when <code>closed_reason = FalsePositive</code></td><td>The 30-day rule: "Was a pothole near here closed as a mistake?"</td></tr>
+      <tr><td class="c"><code>potholes</code></td><td>GIST on <code>location</code> for all potholes</td><td>The map, and the recurring spots job</td></tr>
+      <tr><td class="c"><code>potholes</code></td><td><code>row_version</code> as a concurrency token</td><td>Two people change the same pothole at the same moment: the second one gets 409, or the message is retried</td></tr>
+      <tr><td class="c"><code>potholes</code></td><td>check: if <code>status = Closed</code>, then <code>closed_reason</code> and <code>closed_at</code> are not empty. If <code>Open</code>, they are empty</td><td>A closed pothole with no reason</td></tr>
+      <tr><td class="c"><code>potholes</code></td><td>check: if <code>closed_reason = Duplicate</code>, then <code>duplicate_of_id</code> is not empty and is not equal to <code>id</code></td><td>A "duplicate" with no original pothole, or a pothole that is a duplicate of itself</td></tr>
+      <tr><td class="c"><code>potholes</code></td><td>index on <code>(district_id, status)</code>, on <code>repair_status</code>, and on <code>last_seen_at</code></td><td>Lists, filters and sorting</td></tr>
+      <tr><td class="c"><code>potholes</code></td><td>check: <code>area_m2 &gt; 0</code>, <code>depth_cm &gt; 0</code>, <code>est_total &gt;= 0</code>, and <code>confidence</code> between 0 and 1</td><td>Wrong numbers</td></tr>
+      <tr><td class="c"><code>observations</code></td><td>unique on <code>source_detection_id</code> when it is not empty</td><td>The same detection is not saved twice</td></tr>
+      <tr><td class="c"><code>observations</code></td><td>index on <code>(pothole_id, seen_at desc)</code></td><td>The pothole history, newest first</td></tr>
+      <tr><td class="c"><code>observations</code></td><td>check: <code>verification_result</code> is not empty only when <code>kind = VerificationPass</code></td><td>A verification result on a row that is not a verification</td></tr>
+      <tr><td class="c"><code>recurring_spots</code></td><td>GIST on <code>location</code>, and index on <code>district</code></td><td>The statistics screen</td></tr>
+      <tr><td class="c"><code>admin_areas</code></td><td>GIST on <code>geometry</code></td><td>Find the district and neighborhood of a point</td></tr>
+    </tbody>
+  </table></div>
+  <p>There is no unique constraint on the pothole location, because a closed spot becomes a new pothole. Until the lock is built, two potholes may be created at the same moment. The officer then closes the duplicate with <code>duplicate_of_id</code>. <span class="tag later">Deferred</span></p>
+</section>
+
+<section id="flow">
+  <h2>How data is saved</h2>
+  <p>The same pothole at 5 moments, and what is written to the tables each time:</p>
+  <div class="tw"><table>
+    <thead><tr><th>What happened</th><th><code>potholes</code></th><th><code>observations</code></th></tr></thead>
+    <tbody>
+      <tr><td>The vehicle saw a new crack</td><td>New row P1: <code>Open</code>, stage 1, <code>sightings_count = 1</code></td><td>Row: AI detection, stage 1</td></tr>
+      <tr><td>Seen again, and it became a pothole</td><td>P1: stage 4, <code>sightings_count = 2</code></td><td>Row: AI detection, stage 4</td></tr>
+      <tr><td>Work Order opened a ticket, and the crew arrived</td><td>P1: <code>work_order_id</code> is filled, and <code>repair_status = OnSite</code></td><td>None</td></tr>
+      <tr><td>The vehicle passed twice after the repair</td><td>None</td><td>Two rows: verification pass, <code>Gone</code>, with the image</td></tr>
+      <tr><td>The ticket became <code>Completed</code></td><td>P1: <code>Closed</code>, <code>closed_reason = Repaired</code></td><td>None</td></tr>
+    </tbody>
+  </table></div>
+  <p>If two months later the vehicle sees a pothole in the same place, a new P2 is created, and P1 stays as it is. Later the job puts P1 and P2 in one row in <code>recurring_spots</code>.</p>
+</section>
+
+<section id="mapping">
+  <h2>From class to table</h2>
+  <div class="tw"><table>
+    <thead><tr><th>In the code</th><th>In the database</th><th>How in EF Core</th></tr></thead>
+    <tbody>
+      <tr><td><code>Pothole</code></td><td><code>potholes</code></td><td>A normal entity, with <code>IsConcurrencyToken()</code> on <code>RowVersion</code></td></tr>
+      <tr><td><code>CostEstimate</code></td><td><code>est_*</code> columns inside <code>potholes</code></td><td><code>OwnsOne</code></td></tr>
+      <tr><td><code>GeoPoint</code></td><td>A <code>geography(Point,4326)</code> column</td><td>NetTopologySuite <code>Point</code></td></tr>
+      <tr><td><code>Observation</code></td><td><code>observations</code></td><td><code>HasMany</code>. Only added, and not loaded with the pothole when we run a command</td></tr>
+      <tr><td><code>RecurringSpot</code></td><td><code>recurring_spots</code></td><td>A separate entity, outside the pothole</td></tr>
+      <tr><td>The enums</td><td>Text</td><td><code>HasConversion&lt;string&gt;()</code></td></tr>
+      <tr><td>PostGIS SQL</td><td>Matching and <code>IsSuppressed</code></td><td>In the infrastructure. The <code>PotholeMatcher</code> interface is in the domain</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section id="open">
+  <h2>Open items</h2>
+  <ul class="plain">
+    <li>The <code>recurring_spots</code> job: how often does it run, and how many months back does it look? <span class="tag open">Open</span></li>
+    <li>Idea: when a new pothole is created in the same place, save the old pothole id on the new one, so the job becomes a simple query. <span class="tag prop">Proposal</span></li>
+    <li>The lock on grid cell borders, ordering <code>PotholeSaved</code> by <code>row_version</code>, and merging (the <code>merged_into_id</code> column). <span class="tag later">Deferred</span></li>
+  </ul>
+  <footer class="end">Next step: the pothole tests: matching, the 30-day rule, closing, and the display-only copy.</footer>
+</section>
+</div>

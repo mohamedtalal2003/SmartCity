@@ -21,7 +21,7 @@ public static class BusExtensions
     {
         var rabbit = builder.Configuration.GetSection("RabbitMQ");
 
-        builder.Services.AddMassTransit(x =>
+        builder.Services.AddMassTransit(x => 
         {
             x.SetEndpointNameFormatter(new KebabCaseEndpointNameFormatter(serviceName, false));
 

@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Pothole Service Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #F5F6F3; --surface: #FFFFFF; --ink: #22262A; --quiet: #5C636A; --rule: #D8DAD5;
+  --sign: #E3A80C; --sign-ink: #22262A;
+  --done: #2E7A4C; --prop: #2B65A6; --open: #A85A16; --k: #7446A3;
+  --axis: #8C9196; --grid: #C4C7C1; --diag: #2B65A6;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #15181B; --surface: #1D2125; --ink: #E7E9EB; --quiet: #A2A8AE; --rule: #33393E;
+    --sign: #F0BC2C; --sign-ink: #15181B;
+    --done: #63C08A; --prop: #73A6E2; --open: #E69A57; --k: #B48DE2;
+    --axis: #7C8288; --grid: #3B4146; --diag: #73A6E2;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #15181B; --surface: #1D2125; --ink: #E7E9EB; --quiet: #A2A8AE; --rule: #33393E;
+  --sign: #F0BC2C; --sign-ink: #15181B;
+  --done: #63C08A; --prop: #73A6E2; --open: #E69A57; --k: #B48DE2;
+  --axis: #7C8288; --grid: #3B4146; --diag: #73A6E2;
+  color-scheme: dark;
+}
+:root {
+  box-sizing: border-box;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+*, *::before, *::after { box-sizing: inherit; }
+html { scroll-padding-top: calc(env(safe-area-inset-top, 0px) + 16px); scroll-behavior: smooth; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+body {
+  margin: 0; background: var(--bg); color: var(--ink);
+  font-family: "IBM Plex Sans", "Segoe UI", Tahoma, sans-serif;
+  font-size: 17px; line-height: 1.8;
+}
+code {
+  font-family: "IBM Plex Mono", ui-monospace, Consolas, monospace; font-size: .86em;
+  direction: ltr; unicode-bidi: isolate; background: color-mix(in srgb, var(--rule) 45%, transparent);
+  padding: .05em .35em; border-radius: 4px; white-space: nowrap;
+}
+a { color: var(--prop); }
+a:focus-visible { outline: 2px solid var(--sign); outline-offset: 2px; border-radius: 3px; }
+
+.layout { max-width: 1180px; margin: 0 auto; padding: 0 20px 80px; display: grid; gap: 48px; }
+@media (min-width: 1080px) { .layout { grid-template-columns: 240px minmax(0, 780px); justify-content: center; } }
+main { min-width: 0; max-width: 780px; }
+
+header.top { padding: 56px 0 24px; border-bottom: 1px solid var(--rule); margin-bottom: 8px; }
+header.top h1 { font-size: 2.1rem; line-height: 1.35; margin: 0 0 12px; font-weight: 700; }
+header.top .date { color: var(--quiet); font-size: .95rem; margin: 0 0 20px; }
+header.top .lead { font-size: 1.12rem; margin: 0 0 20px; }
+.legend { display: flex; flex-wrap: wrap; gap: 10px 18px; font-size: .92rem; color: var(--quiet); margin: 0; padding: 0; list-style: none; }
+
+.tag {
+  display: inline-block; font-size: .78rem; font-weight: 600; line-height: 1.5;
+  padding: 0 .55em; border-radius: 999px; border: 1.5px solid currentColor; white-space: nowrap;
+  vertical-align: .08em; margin-inline-start: .25em;
+}
+.tag.done { color: var(--done); }
+.tag.prop { color: var(--prop); }
+.tag.open { color: var(--open); }
+.tag.k { color: var(--k); }
+.tag.def, .tag.later { color: var(--quiet); border-style: dashed; }
+
+nav.toc { position: relative; }
+@media (min-width: 1080px) { nav.toc > div { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 32px); padding-top: 64px; } }
+nav.toc h2 { font-size: .95rem; color: var(--quiet); margin: 0 0 8px; font-weight: 600; }
+nav.toc ol { list-style: none; margin: 0; padding: 0; font-size: .95rem; }
+nav.toc li { margin: 2px 0; }
+nav.toc a { color: var(--ink); text-decoration: none; display: block; padding: 3px 10px; border-inline-start: 2px solid var(--rule); }
+nav.toc a:hover { border-inline-start-color: var(--sign); }
+@media (max-width: 1079px) { nav.toc { order: 2; } nav.toc > div { padding: 16px 0 0; } main { order: 1; } }
+
+section { padding-top: 40px; }
+section > h2 {
+  font-size: 1.55rem; margin: 0 0 6px; line-height: 1.4; font-weight: 700;
+  padding-bottom: 10px;
+  background-image: linear-gradient(to right, var(--sign) 0 28px, transparent 28px 40px, var(--sign) 40px 68px, transparent 68px);
+  background-repeat: no-repeat; background-position: left bottom; background-size: 100% 4px;
+}
+section > p.lead { margin: 10px 0 8px; }
+h3.sub { font-size: 1.15rem; margin: 28px 0 8px; }
+
+.sc { border-inline-start: 3px solid var(--rule); padding: 2px 0 2px 18px; margin: 30px 0; }
+.sc h3 { font-size: 1.2rem; margin: 0 0 10px; line-height: 1.5; display: flex; align-items: baseline; gap: 10px; }
+.num {
+  flex: none; background: var(--sign); color: var(--sign-ink); font-weight: 700; font-size: .95rem;
+  min-width: 2.1em; text-align: center; border-radius: 6px; padding: 0 .4em; font-variant-numeric: tabular-nums;
+}
+dl.f { display: grid; grid-template-columns: 7.2em minmax(0, 1fr); gap: 6px 14px; margin: 0; }
+dl.f dt { color: var(--quiet); font-weight: 600; }
+dl.f dd { margin: 0; }
+dl.f dd ul { margin: 2px 0 0; padding-inline-start: 1.1em; }
+dl.f dd li { margin: 3px 0; }
+@media (max-width: 560px) { dl.f { grid-template-columns: 1fr; gap: 0; } dl.f dt { margin-top: 8px; } }
+
+ol.decisions { padding-inline-start: 1.4em; }
+ol.decisions li { margin: 8px 0; }
+ul.plain { padding-inline-start: 1.1em; }
+ul.plain li { margin: 6px 0; }
+
+.tw { overflow-x: auto; margin: 14px 0; border: 1px solid var(--rule); border-radius: 8px; background: var(--surface); }
+table { border-collapse: collapse; width: 100%; font-size: .96rem; }
+th, td { text-align: start; padding: 9px 14px; border-bottom: 1px solid var(--rule); vertical-align: top; }
+th { font-weight: 600; color: var(--quiet); background: color-mix(in srgb, var(--rule) 30%, transparent); white-space: nowrap; }
+tr:last-child td { border-bottom: 0; }
+td.n, th.n { text-align: center; font-variant-numeric: tabular-nums; }
+tr.total td { font-weight: 700; }
+
+figure.diagram { margin: 18px 0 8px; background: var(--surface); border: 1px solid var(--rule); border-radius: 10px; padding: 12px; overflow-x: auto; }
+figure.diagram svg { display: block; width: 100%; min-width: 560px; height: auto; direction: ltr; }
+figure.diagram figcaption { color: var(--quiet); font-size: .92rem; margin-top: 6px; }
+
+pre.schema {
+  direction: ltr; text-align: left; background: var(--surface); border: 1px solid var(--rule); border-radius: 8px;
+  padding: 14px 16px; overflow-x: auto; font-family: "IBM Plex Mono", ui-monospace, Consolas, monospace; font-size: .9rem; line-height: 1.6;
+}
+footer.end { margin-top: 56px; padding-top: 18px; border-top: 1px solid var(--rule); color: var(--quiet); font-size: .92rem; }
+</style>
+<style>
+.steps { list-style: none; margin: 0 0 8px; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
+.steps li { border: 1.5px solid var(--rule); border-radius: 999px; padding: 2px 14px; font-size: .92rem; color: var(--quiet); }
+.steps li.now { border-color: var(--sign); color: var(--ink); font-weight: 600; background: color-mix(in srgb, var(--sign) 14%, transparent); }
+td.c, th.c { white-space: nowrap; }
+.count { color: var(--quiet); font-weight: 400; font-size: .95rem; }
+</style>
+
+</head>
+<body>
+<div class="layout">
+<nav class="toc" aria-label="Contents"><div><h2>Contents</h2><ol>
+<li><a href="#decisions">Decisions</a></li>
+<li><a href="#lifecycle">Pothole states and rules</a></li>
+<li><a href="#order">Out-of-order messages</a></li>
+<li><a href="#officer">Officer commands</a></li>
+<li><a href="#system">System work</a></li>
+<li><a href="#reads">Reads</a></li>
+<li><a href="#endpoints">The endpoints</a></li>
+<li><a href="#changes">Required changes</a></li>
+<li><a href="#open">Open items</a></li>
+</ol></div></nav>
+<main>
+<header class="top">
+  <h1>Pothole Service Design</h1>
+  <p class="date">Last updated: 14 October 2026, after the decision review.  Scenarios are numbered with the letter "P" so they do not get mixed up with the Work Order numbers.</p>
+  <ol class="steps" aria-label="Design steps">
+    <li>1. Scenarios ✓</li><li class="now">2. The endpoints</li><li>3. The domain</li><li>4. The schema</li><li>5. The tests</li>
+  </ol>
+  <p class="lead">The Pothole service knows the street: where the potholes are, how bad they are, when they were seen, and their photos. It decides if each detection is a new pothole or an open pothole we saw before, and it calculates the estimate. The repair steps themselves live only inside Work Order. The pothole knows only one thing from there: the ticket was closed, and why.</p>
+  <ul class="legend" aria-label="What the tags mean">
+    <li><span class="tag done">Decided</span> We agreed on it</li><li><span class="tag prop">Proposal</span> Still waiting for your confirmation</li><li><span class="tag open">Open</span> Still needs a decision</li><li><span class="tag k">Contract change</span> Needs a change in the Contracts</li><li><span class="tag def">Default</span> A starting number in the config</li><li><span class="tag later">Deferred</span> Needs details later</li>
+  </ul>
+</header>
+
+<section id="decisions">
+  <h2>Decisions</h2>
+  <ol class="decisions">
+    <li>The service is Onion-shaped, and the logic lives in the domain: the matching decision and closing the pothole. The PostGIS SQL lives in the infrastructure. <span class="tag done">Decided</span></li>
+    <li>Storage uses two tables: a main record with the current state of the pothole, and <code>observations</code> with every time it was seen, corrected or checked. Observations are only added, never edited. <span class="tag done">Decided</span></li>
+    <li>The estimate is calculated inside Pothole by its own estimator, <code>PotholeEstimator.Estimate(severity, stage, areaM2, depthCm, prices)</code>, when a pothole is created or when its severity or stage changes. The prices come from the config and are passed in. There is no shared calculator: Inventory and Building will each have their own estimator, because each kind of thing is repaired in a different way. The estimate goes out inside <code>PotholeSaved</code>. <span class="tag done">Decided</span></li>
+    <li>A pothole has only two states: <code>Open</code> and <code>Closed</code>, with <code>Merged</code> later. <code>Closed</code> is final, and a pothole never opens again. <span class="tag done">Decided</span></li>
+    <li>Each pothole has only one ticket in its whole life. If a pothole is seen in the same place after it was closed, it is a new pothole with a new ticket. <span class="tag done">Decided</span></li>
+    <li>The repair steps (assigned, crew arrived, paused, waiting for confirmation) live only in Work Order. Pothole has no rule that depends on them. <span class="tag done">Decided</span></li>
+    <li>Pothole keeps the ticket state in a display-only column (<code>repair_status</code>), so the map and lists can filter by it. No rule inside Pothole looks at this column. <span class="tag done">Decided</span></li>
+    <li>The post-repair check belongs to Work Order, because the list is "tickets waiting for confirmation". Pothole saves the result of each verification pass as an observation, so the "after" photo exists. <span class="tag done">Decided</span></li>
+    <li>Names: <code>observations</code> for the observation records, <code>row_version</code> for the counter that stops two people from editing the pothole at the same moment, and <code>ticket_sequence</code> for the order number in ticket messages. The word <code>version</code> alone is not used. <span class="tag done">Decided</span></li>
+    <li>Pothole is the model, and Inventory and Building will copy the same shape. But the 10 October decisions apply only to potholes for now, and the other two services stay as they are. <span class="tag done">Decided</span></li>
+    <li>A crack and a pothole within 3 meters are one damage record, not two. The record has a damage type (<code>damage_type</code>) and a stage, and both only move forward as the damage grows, from a crack to a pothole. They never go back, unless an officer corrects them. Each observation also keeps its own damage type, so the timeline shows the crack turning into a pothole. <span class="tag done">Decided</span></li>
+  </ol>
+  <h3 class="sub">Table shapes</h3>
+  <pre class="schema">potholes
+  id, location, damage_type, district_id, neighborhood_id, road_name,
+  status, closed_reason, closed_at, duplicate_of_id,
+  current_severity, current_stage, area_m2, depth_cm, confidence,
+  est_materials, est_labor, est_equipment, est_total, source, sightings_count,
+  work_order_id, repair_status, repair_status_seq,
+  first_seen_at, last_seen_at, row_version
+
+observations
+  id, pothole_id, source_detection_id, kind,
+  damage_type, severity, stage, area_m2, depth_cm, confidence,
+  verification_result, image_url, notes, seen_at, created_by
+
+recurring_spots
+  id, location, district, pothole_ids, pothole_count,
+  first_seen_at, last_seen_at, computed_at
+
+admin_areas
+  id, name, level, parent_id, geometry</pre>
+  <ul class="plain">
+    <li>The <code>row_version</code> column in the main record stops two writers from writing to the same pothole at the same moment.</li>
+    <li>The <code>closed_reason</code> column: repaired, false, duplicate, or resolved another way. <code>duplicate_of_id</code> is the other pothole's id when the reason is "duplicate".</li>
+    <li>The <code>work_order_id</code>, <code>repair_status</code> and <code>repair_status_seq</code> columns are a display-only copy of Work Order messages (P6).</li>
+    <li>The <code>kind</code> column in observations: a detection from the AI, an addition by the officer, a manual correction, or a verification pass. <code>verification_result</code> is filled only in a verification pass: gone, still there, or not visible.</li>
+    <li>The <code>recurring_spots</code> table is filled by the job for potholes that come back in the same place (P17).</li>
+    <li>The <code>admin_areas</code> table holds the districts (ilçe) and neighborhoods (mahalle) of Istanbul, loaded once from OpenStreetMap GeoJSON (<code>admin_level</code> 6 and 8). When a pothole is created, it gets <code>district_id</code> and <code>neighborhood_id</code> from a point-in-polygon check (<code>Intersects</code>).</li>
+  </ul>
+</section>
+
+<section id="lifecycle">
+  <h2>Pothole state</h2>
+  <p class="lead">A pothole has two states: <code>Open</code> and <code>Closed</code>. <code>Closed</code> is final and comes with a reason. Any move not in the table is not allowed.</p>
+  <figure class="diagram">
+<svg viewBox="0 0 760 250" role="img" aria-label="A pothole stays open until its ticket is closed" font-size="13" font-family="IBM Plex Sans, Segoe UI, Tahoma, sans-serif">
+<defs><marker id="ph-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" style="fill: var(--axis)"/></marker></defs>
+<g fill="none" style="stroke: var(--axis)" stroke-width="1.25">
+<path d="M174 110H400" marker-end="url(#ph-arrow)"/>
+<path d="M110 134V186" marker-end="url(#ph-arrow)" stroke-dasharray="4 4"/>
+</g>
+<rect x="46" y="86" width="128" height="48" rx="8" fill="none" style="stroke: var(--axis)" stroke-width="1.25"/>
+<rect x="400" y="62" width="320" height="140" rx="10" style="fill: var(--diag); stroke: var(--diag)" fill-opacity="0.08" stroke-width="1.5"/>
+<rect x="46" y="186" width="128" height="48" rx="8" fill="none" style="stroke: var(--axis)" stroke-width="1.25" stroke-dasharray="5 4"/>
+<g text-anchor="middle" font-weight="600" style="fill: var(--ink)">
+<text x="110" y="114">Open</text><text x="560" y="88">Closed</text><text x="110" y="214">Merged</text>
+</g>
+<g font-size="12" style="fill: var(--quiet)">
+<text x="287" y="100" text-anchor="middle">ticket closed</text>
+<text x="287" y="132" text-anchor="middle">or detection dismissed</text>
+<text x="124" y="166">later</text>
+</g>
+<g font-size="12.5" style="fill: var(--ink)">
+<text x="420" y="118" text-anchor="start">Repaired: officer or vehicle confirmed</text>
+<text x="420" y="142" text-anchor="start">False: AI was wrong, plus the 30-day rule</text>
+<text x="420" y="166" text-anchor="start">Duplicate: with the other pothole's id</text>
+<text x="420" y="190" text-anchor="start">Resolved another way</text>
+</g>
+</svg>
+<figcaption>A pothole is <code>Open</code> until its ticket is closed. Then it becomes <code>Closed</code> with the reason, and it never opens again. If a pothole is seen in the same place after that, it is a new pothole.</figcaption>
+</figure>
+  <h3 class="sub">Allowed moves</h3>
+  <div class="tw"><table>
+    <thead><tr><th>From</th><th>To</th><th>Cause</th><th>Condition</th></tr></thead>
+    <tbody>
+<tr><td class="c">None (new pothole)</td><td class="c"><code>Open</code></td><td>A new detection with no open pothole within 3 meters, or the officer added it</td><td>The place is inside Istanbul, and AI confidence is 50% or more <span class="tag def">Default</span>. The confidence condition does not apply to an officer's addition</td></tr>
+<tr><td class="c"><code>Open</code></td><td class="c"><code>Closed</code> (repaired)</td><td>A message that the ticket became <code>Completed</code></td><td>The ticket belongs to this pothole</td></tr>
+<tr><td class="c"><code>Open</code></td><td class="c"><code>Closed</code> (false)</td><td>The ticket was cancelled as "false", or a <code>DetectionDismissed</code> message</td><td>Same pothole</td></tr>
+<tr><td class="c"><code>Open</code></td><td class="c"><code>Closed</code> (duplicate)</td><td>The ticket was cancelled as "duplicate"</td><td>The message has the other pothole's id, and the other one is open</td></tr>
+<tr><td class="c"><code>Open</code></td><td class="c"><code>Closed</code> (resolved another way)</td><td>The ticket was cancelled for this reason, for example the whole street was repaved</td><td>Same pothole</td></tr>
+<tr><td class="c"><code>Open</code></td><td class="c"><code>Merged</code></td><td>The officer merged it into another pothole</td><td><span class="tag later">Deferred</span></td></tr>
+    </tbody>
+  </table></div>
+  <h3 class="sub">Not allowed</h3>
+  <ul class="plain">
+    <li>Any move after <code>Closed</code> or <code>Merged</code>. If the officer closed it by mistake, they add the pothole by hand (P1), and it becomes a new pothole. <span class="tag done">Decided</span></li>
+    <li>A pothole going back to <code>Open</code> for any reason. <span class="tag done">Decided</span></li>
+    <li>Changing the state with a direct command from the officer. A pothole closes only when its ticket closes. <span class="tag done">Decided</span></li>
+  </ul>
+  <h3 class="sub">If the condition is not met</h3>
+  <ul class="plain">
+    <li>If it is a command from a person: rejected with 409.</li>
+    <li>If it is a message: ignored, and a warning is logged. We do not retry, because sending the same message again will not change the result.</li>
+  </ul>
+  <h3 class="sub">Repair status for display</h3>
+  <p>This is not the pothole state. It is a copy of the ticket state, stored in <code>repair_status</code> so the map and lists can filter and sort by it in one query. The screen shows it like this:</p>
+  <div class="tw"><table>
+    <thead><tr><th>Ticket state</th><th>Shown on screen</th></tr></thead>
+    <tbody>
+<tr><td>No ticket</td><td>Nothing</td></tr>
+<tr><td><code>Pending</code></td><td>Waiting for a crew</td></tr>
+<tr><td><code>Assigned</code> and <code>EnRoute</code></td><td>Crew on the way</td></tr>
+<tr><td><code>OnSite</code></td><td>Crew working</td></tr>
+<tr><td><code>Paused</code></td><td>Paused</td></tr>
+<tr><td><code>AwaitingReview</code></td><td>Repaired, waiting for confirmation</td></tr>
+<tr><td><code>Rejected</code></td><td>Crew coming back to repair again</td></tr>
+    </tbody>
+  </table></div>
+  <p>If Work Order adds a new state later, the column will be filled with it and nothing in Pothole will break. At most, the screen needs to learn how to show it.</p>
+</section>
+
+<section id="order">
+  <h2>Out-of-order messages</h2>
+  <p class="lead">After the new split, Pothole rules no longer depend on the order of Work Order messages. Only the order of the display-only column is left, and that is one line.</p>
+  <ul class="plain">
+    <li><strong>Closing the pothole:</strong> happens from one final message (the ticket was closed). Closed is closed, so if the message arrives twice or late, it makes no difference.</li>
+    <li><strong>The display-only column:</strong> every message from Work Order has <code>ticket_sequence</code>, which is the ticket's own counter (its <code>row_version</code>). Pothole overwrites <code>repair_status</code> only if the pothole is open and the new number is bigger than <code>repair_status_seq</code>. If the pothole is closed, any message from Work Order is ignored. <span class="tag k">Contract change</span></li>
+    <li><strong>The other direction, from Pothole to Work Order:</strong> if an old <code>PotholeSaved</code> message from the AI arrives after the officer's correction, the priority may go back to a wrong value. The fix is for the message to carry the pothole's <code>row_version</code>, and Work Order drops the older one. <span class="tag later">Deferred</span></li>
+  </ul>
+  <pre class="schema">public void ApplyRepairStatus(string status, long ticketSequence)
+{
+    if (Status != PotholeStatus.Open) return;        // closed: ignore
+    if (ticketSequence &lt;= RepairStatusSeq) return; // older message
+    RepairStatus = status;
+    RepairStatusSeq = ticketSequence;
+}</pre>
+  <p>This code has no rules: no "allowed" and "not allowed". It only makes sure the screen shows the latest state.</p>
+</section>
+
+<section id="officer">
+  <h2>Officer commands</h2>
+  <p class="lead">The officer can add a pothole, correct its data, and merge two potholes. But the officer cannot change its state by hand.</p>
+<article class="sc" id="h1"><h3><span class="num">P1</span> The officer adds a pothole by hand</h3><dl class="f"><dt>Why</dt><dd>A citizen reported it, or the officer saw it in person, and no vehicle has passed over it yet. Also if the officer closed a ticket by mistake.</dd><dt>Command</dt><dd>Add pothole: the place, the photo link (from <code>POST /api/uploads</code>), the rough severity or size, the source (citizen report or officer), and notes. <span class="tag k">Contract change</span></dd><dt>Rejected if</dt><dd>The place is outside Istanbul, or the photo is not from our blob storage, or both severity and size are missing.</dd><dt>Result</dt><dd>An <code>Open</code> pothole, the estimate is calculated, <code>PotholeSaved</code> goes out, and the ticket flows as usual.</dd><dt>Special cases</dt><dd><ul><li>There is an <strong>open</strong> pothole within 3 meters: the report is added to it as an observation, and the response returns its id.</li><li>Next to a pothole <code>Closed</code> as "false" less than 30 days ago: the addition goes through as usual and makes a new pothole, because the 30-day rule is for the AI only. <span class="tag done">Decided</span></li><li>No size: the estimate is calculated from the severity, and the screen shows it as "approximate" because <code>area_m2</code> is empty. There is no column for this. <span class="tag done">Decided</span></li><li>The AI confidence condition does not apply here, because the officer saw it with their own eyes.</li><li>Double click: the <code>Idempotency-Key</code> protects against it.</li></ul></dd></dl></article>
+<article class="sc" id="h2"><h3><span class="num">P2</span> The officer corrects a pothole's data</h3><dl class="f"><dt>Why</dt><dd>The AI measured the size or the severity wrong.</dd><dt>Command</dt><dd>Correction: the severity, the stage, the area, or the depth, and the reason. <span class="tag k">Contract change</span></dd><dt>Rejected if</dt><dd>The pothole is <code>Closed</code> or <code>Merged</code>, or nothing changed, or the reason is missing.</dd><dt>Result</dt><dd>A new observation of kind "manual correction", the main record is updated, the estimate is calculated again, and <code>PotholeSaved</code> goes out with <code>Reason</code> = correction.</dd><dt>Priority</dt><dd><ul><li>The correction always goes through, even if it lowers the severity, and the ticket priority changes with it. <span class="tag done">Decided</span></li><li>Unless the officer had changed the priority by hand in Work Order: their decision there stays. <span class="tag done">Decided</span></li><li>The rule "if the severity goes down, nothing changes" is for the AI only.</li></ul></dd></dl></article>
+<article class="sc" id="h3"><h3><span class="num">P3</span> The officer merges two potholes <span class="tag later">Deferred</span></h3><dl class="f"><dt>Why</dt><dd>The system made two potholes that are really one pothole. This can happen even from one vehicle, if it photographed the same pothole in two photos one after the other.</dd><dt>Until merge is built</dt><dd>The officer cancels the duplicate pothole's ticket as "duplicate", with the other pothole's id. The pothole becomes <code>Closed</code> and <code>duplicate_of_id</code> points to the other one. <span class="tag done">Decided</span></dd><dt>Later</dt><dd>A real merge command: the pothole becomes <code>Merged</code>, and its observations move to the remaining pothole.</dd></dl></article>
+<article class="sc" id="h4"><h3><span class="num">P4</span> Changing the pothole state by hand: not allowed</h3><dl class="f"><dt>Why not</dt><dd>A pothole closes when its ticket closes. If the officer closed it from Pothole while the ticket is still open, we would have two places saying opposite things.</dd><dt>Instead</dt><dd><ul><li>To close it: close the ticket in Work Order with the right reason, and the pothole closes by itself.</li><li>To correct data: scenario P2.</li></ul></dd></dl></article>
+</section>
+
+<section id="system">
+  <h2>Things the system does by itself</h2>
+  <p class="lead">Detections come from the AI, the state comes from Work Order, and Pothole publishes only when something important changes.</p>
+<article class="sc" id="h5"><h3><span class="num">P5</span> A new detection arrived</h3><dl class="f"><dt>Source</dt><dd><code>RawDetectionReceived</code> from the AI: the place, the size, the depth, the confidence, and the photo.</dd><dt>What happens</dt><dd><ul><li>We look for an <strong>open</strong> pothole within 3 meters <span class="tag def">Default</span>. If we find one, a new observation. If not, a new pothole.</li><li>We calculate the estimate, and publish if something important changed (P9).</li></ul></dd><dt>Special cases</dt><dd><ul><li>The same message came twice: the inbox stops the duplicate.</li><li>Next to a pothole <code>Closed</code> as "false" less than 30 days ago <span class="tag def">Default</span>: only an observation on the closed pothole, so the same mistake does not create a pothole every day.</li><li>Next to a pothole <code>Closed</code> for any other reason, or "false" more than 30 days ago: a new pothole (P8).</li><li>AI confidence below 50% <span class="tag def">Default</span>: if there is an open pothole nearby, an observation. Otherwise it is ignored and logged.</li><li>The message is incomplete, for example no depth: rejected and sent to <code>_error</code>. <span class="tag prop">Proposal</span></li><li>Two detections of the same pothole at the same moment: we may get two potholes. The fix (the lock on the grid cells) is deferred, and the officer closes the duplicate as "duplicate". <span class="tag later">Deferred</span></li></ul></dd></dl></article>
+<article class="sc" id="h6"><h3><span class="num">P6</span> Work Order messages arrived</h3><dl class="f"><dt>Listens to</dt><dd><code>WorkOrderCreated</code> and <code>WorkOrderStatusChanged</code>. Every message has <code>SourceEntityId</code> (the pothole id) and <code>ticket_sequence</code>. <span class="tag k">Contract change</span></dd><dt>What it does</dt><dd><ul><li>If the pothole is open: update the display-only column (<code>work_order_id</code> and <code>repair_status</code>) if <code>ticket_sequence</code> is bigger than the one it has. The message that closes the pothole first writes the last repair status, then closes.</li><li>If the ticket became <code>Completed</code>: the pothole is <code>Closed</code> as "repaired".</li><li>If the ticket became <code>Cancelled</code>: the pothole is <code>Closed</code> with the cancel reason (false, or duplicate with the other pothole's id, or resolved another way).</li><li>Any other state: only the display-only column, and the pothole stays <code>Open</code>.</li></ul></dd><dt>Special cases</dt><dd><ul><li>The pothole is already closed: the message is fully ignored, because any message after closing is old. <span class="tag done">Decided</span></li><li>Two writers on the same pothole at the same moment: <code>row_version</code> rejects the second one, and MassTransit retries it.</li></ul></dd></dl></article>
+<article class="sc" id="h7"><h3><span class="num">P7</span> The officer dismissed a detection in a manual district</h3><dl class="f"><dt>Source</dt><dd><code>DetectionDismissed</code> from Work Order. <span class="tag k">Contract change</span></dd><dt>What happens</dt><dd>The pothole becomes <code>Closed</code> as "false", and the 30-day rule starts.</dd><dt>Special cases</dt><dd>The message has the pothole id, and the pothole always exists, because it is created before the officer even sees the detection. So we do not need to keep dismissed detections in a separate table. <span class="tag done">Decided</span></dd></dl></article>
+<article class="sc" id="h8"><h3><span class="num">P8</span> A pothole seen where a closed pothole was</h3><dl class="f"><dt>What happens</dt><dd>Matching looks only at open potholes. So a place with a <code>Closed</code> pothole is empty for matching, and the detection makes a new pothole with a new ticket. <span class="tag done">Decided</span></dd><dt>The exception</dt><dd>A pothole closed as "false" less than 30 days ago: only an observation on it, from the AI. An officer's manual addition still makes a new pothole as usual. <span class="tag done">Decided</span></dd><dt>Why</dt><dd>Each pothole has only one ticket, so a repaired pothole never opens again. If the street breaks again in the same place, this shows up in the stats of places where potholes come back (P17).</dd><dt>Special cases</dt><dd>The pothole is still open and its ticket is waiting for confirmation, and the AI saw it on a normal pass: only an observation. The confirmation decision comes from the results of verification passes (P10), not from normal detections.</dd></dl></article>
+<article class="sc" id="h9"><h3><span class="num">P9</span> When to publish PotholeSaved</h3><dl class="f"><dt>Publish when</dt><dd><ul><li>A new pothole was created.</li><li>The severity or the stage changed.</li><li>The officer added it or corrected its data.</li></ul></dd><dt>Do not publish when</dt><dd>The pothole was seen again and nothing changed. Only an observation, so Work Order does not drown in useless messages.</dd><dt>In the message</dt><dd>The main record, the estimate, and a <code>Reason</code> field that says why the message was sent: new, changed, or corrected. <span class="tag k">Contract change</span></dd></dl></article>
+<article class="sc" id="h10"><h3><span class="num">P10</span> Post-repair check</h3><dl class="f"><dt>List owner</dt><dd>Work Order. The list is the tickets in state <code>AwaitingReview</code>, meaning the crew sent the proof. <span class="tag done">Decided</span></dd><dt>Steps</dt><dd><ul><li>Work Order publishes <code>VerificationRequested</code> when the ticket enters <code>AwaitingReview</code>, and <code>VerificationEnded</code> when it leaves it. The message has the place. <span class="tag k">Contract change</span></li><li>Vehicle Communication keeps a copy of the list, and sends it to the vehicles so the camera takes photos at exactly these places. This is the first time the server sends to the vehicle over MQTT.</li><li>The AI answers every photo from these places with a <code>RepairVerificationObserved</code> message: gone, still there, or not visible. <span class="tag k">Contract change</span></li><li>Work Order decides: two "gone" results after the proof time <span class="tag def">Default</span>, and the ticket becomes <code>Completed</code>. "Still there": only an alert to the officer, who decides to reject the work or wait. <span class="tag done">Decided</span> Automatic rejection is <span class="tag later">Deferred</span></li><li>Pothole saves each result as an observation of kind "verification pass", with the photo. The newest "gone" photo is the "after" photo on the portal.</li></ul></dd><dt>Special cases</dt><dd><ul><li>"Not visible" (a parked car, night, or rain): changes nothing.</li><li>Photos taken before the crew sent the proof do not count.</li><li>The officer closed the ticket before the vehicle: <code>VerificationEnded</code> goes out, and the place leaves the list.</li><li>No vehicle passed for 14 days <span class="tag def">Default</span>: the officer assigns an inspection crew to the same ticket. <span class="tag done">Decided</span></li></ul></dd><dt>Open</dt><dd>When does the vehicle get the list (before it enters the district, or when it gets close)? And if the vehicle is offline, does it get the full list when it comes back? <span class="tag open">Open</span></dd></dl></article>
+</section>
+
+<section id="reads">
+  <h2>Reads</h2>
+  <p class="lead">The officer sees one pothole, a list with many filters, the map, the history, or the stats. The citizen sees only what was repaired.</p>
+<article class="sc" id="h11"><h3><span class="num">P11</span> One pothole</h3><dl class="f"><dt>Returns</dt><dd>The full main record, the latest photo, the estimate, the repair status for display, and the ticket id.</dd><dt>Special cases</dt><dd>A pothole <code>Closed</code> as "duplicate": the response returns the other pothole's id.</dd></dl></article>
+<article class="sc" id="h12"><h3><span class="num">P12</span> Pothole list with filters</h3><dl class="f"><dt>Place</dt><dd>The district, the neighborhood (from the <code>admin_areas</code> table), the street name, and the box visible on the map.</dd><dt>The pothole itself</dt><dd>The severity, the stage, the size (area and depth), and AI confidence.</dd><dt>State</dt><dd>Open or closed, the close reason, and the repair status (from the display-only column). "Repaired and confirmed" means <code>Closed</code> as "repaired".</dd><dt>Money</dt><dd>Estimated cost from X to Y.</dd><dt>Time</dt><dd>First seen, last seen, and when it was closed.</dd><dt>Source</dt><dd>The AI, the officer, or a citizen report.</dd><dt>Count</dt><dd>How many times it was seen.</dd><dt>Sort</dt><dd>Most severe, most expensive, newest, or oldest without repair.</dd><dt>Special cases</dt><dd>"All potholes" is the same list without filters, with pages. No results? An empty list, not an error.</dd></dl></article>
+<article class="sc" id="h13"><h3><span class="num">P13</span> Potholes on the map</h3><dl class="f"><dt>Sends</dt><dd>The screen bounds (longitude and latitude), and the same filters as P12.</dd><dt>Special cases</dt><dd>When the officer zooms out, potholes are grouped into circles with the count, instead of returning thousands of points. <span class="tag prop">Proposal</span></dd></dl></article>
+<article class="sc" id="h14"><h3><span class="num">P14</span> Pothole history</h3><dl class="f"><dt>Returns</dt><dd>All observations in order (photo, severity, stage, date, kind, and verification pass result), the ticket opened for it, and when and why it was closed.</dd><dt>Special cases</dt><dd>A pothole seen hundreds of times: observations come in pages, newest first.</dd></dl></article>
+<article class="sc" id="h15"><h3><span class="num">P15</span> Pothole stats <span class="tag open">Open</span></h3><dl class="f"><dt>Count</dt><dd>How many potholes in each district, by state and by stage.</dd><dt>Trend</dt><dd>How many new potholes each week, against how many were repaired.</dd><dt>Speed</dt><dd>Average time from first seen until closed as "repaired". Pothole calculates it by itself, because it knows both times.</dd>
+<dt>Recurring places</dt><dd>From the job's table (P17).</dd><dt>Money</dt><dd>Total cost of open potholes in each district.</dd><dt>Open</dt><dd>These are proposals. We still need to learn what else the officer needs to see.</dd></dl></article>
+<article class="sc" id="h16"><h3><span class="num">P16</span> Citizen portal "Ne Yaptık"</h3><dl class="f"><dt>Who</dt><dd>Anyone, without login.</dd><dt>What they see</dt><dd>Only potholes <code>Closed</code> as "repaired". This means the repair was confirmed, by the officer or by the vehicle, so we do not need a separate "confirmed" mark. With a "before" photo and an "after" photo, the place, and the closing date.</dd><dt>Special cases</dt><dd>Privacy: people's faces and car plates must be covered (blur) before the photos are published, because of the KVKK law. Where this happens is not decided yet. <span class="tag open">Open</span></dd></dl></article>
+
+<article class="sc" id="h17"><h3><span class="num">P17</span> Places where potholes come back</h3><dl class="f"><dt>When</dt><dd>A background job every so often. <span class="tag open">Open</span></dd><dt>What it does</dt><dd>It looks for potholes recorded in the same place (within 3 meters <span class="tag def">Default</span>) during a given period, and puts them in the <code>recurring_spots</code> table: the place, the district, the pothole ids, and their count.</dd><dt>Why it helps</dt><dd>The officer learns which streets keep breaking, which tells us the repair there is not enough.</dd><dt>Open</dt><dd>How far back we look, and how often the job runs. <span class="tag open">Open</span></dd><dt>Idea</dt><dd>When a new pothole is created next to a pothole closed as "repaired", we save the old one's id on the new one. Then the job becomes a simple query. <span class="tag prop">Proposal</span></dd></dl></article>
+</section>
+
+<section id="endpoints">
+  <h2>The endpoints</h2>
+  <p class="lead">The scenarios gave us 3 commands (one of them deferred) and 6 reads. The rest happens through messages, without endpoints. Same rules as Work Order: every command must carry an <code>Idempotency-Key</code>, the identity comes from the JWT, and lists come in pages.</p>
+  <ul class="legend" aria-label="What the tags mean">
+    <li><span class="tag done">Exists</span> In the proto or the Gateway now</li><li><span class="tag k">New</span> Does not exist</li><li><span class="tag later">Deferred</span> Deferred</li>
+  </ul>
+
+  <h3 class="sub">Commands <span class="count">(3)</span></h3>
+  <div class="tw"><table>
+    <thead><tr><th>Endpoint</th><th>rpc</th><th>What is sent</th><th>Response on success</th><th class="n">Scenario</th><th>Status</th></tr></thead>
+    <tbody>
+<tr><td class="c"><code>POST /api/potholes</code></td><td class="c"><code>AddPothole</code></td><td>The place (longitude and latitude), the photo link, the severity or size, the source, and notes</td><td>201 with the new pothole id. Or 200 with the existing pothole id, if the report was added to it as an observation</td><td class="n">P1</td><td class="c"><span class="tag k">New</span></td></tr>
+<tr><td class="c"><code>POST /api/potholes/{id}/corrections</code></td><td class="c"><code>CorrectPothole</code></td><td>The severity, the stage, the area, or the depth, and the reason</td><td>200</td><td class="n">P2</td><td class="c"><span class="tag k">New</span></td></tr>
+<tr><td class="c"><code>POST /api/potholes/{id}/merge</code></td><td class="c"><code>MergePotholes</code></td><td>The id of the pothole that stays, and the reason</td><td>200</td><td class="n">P3</td><td class="c"><span class="tag later">Deferred</span></td></tr>
+    </tbody>
+  </table></div>
+  <ul class="plain">
+    <li>The photo is uploaded first to <code>POST /api/uploads</code> (built in the Work Order design), then the link is sent with the command.</li>
+    <li>In the add command, the officer must send the severity or the size, at least one of them. If only the severity is sent, the estimate is calculated from the average size for that severity, and the screen shows it as "approximate" when <code>area_m2</code> is empty. <span class="tag done">Decided</span></li>
+    <li>The add command returns 200, not 201, if there is a pothole within 3 meters, so the screen can tell the officer "this pothole was already recorded, and we added your report to it".</li>
+  </ul>
+
+  <h3 class="sub">Reads <span class="count">(6)</span></h3>
+  <div class="tw"><table>
+    <thead><tr><th>Endpoint</th><th>rpc</th><th>Returns</th><th class="n">Scenario</th><th>Status</th></tr></thead>
+    <tbody>
+<tr><td class="c"><code>GET /api/potholes/{id}</code></td><td class="c"><code>GetDamageById</code></td><td>The full main record, the latest photo, the estimate, the repair status for display, and the ticket id</td><td class="n">P11</td><td class="c"><span class="tag done">Exists</span></td></tr>
+<tr><td class="c"><code>GET /api/potholes</code></td><td class="c"><code>ListDamages</code></td><td>A list with the filters in the table below, with pages</td><td class="n">P12</td><td class="c"><span class="tag done">Exists</span></td></tr>
+<tr><td class="c"><code>GET /api/potholes/map</code></td><td class="c"><code>GetDamagesOnMap</code></td><td>Potholes inside the screen bounds, or circles with the count if there are many</td><td class="n">P13</td><td class="c"><span class="tag k">New</span></td></tr>
+<tr><td class="c"><code>GET /api/potholes/{id}/timeline</code></td><td class="c"><code>GetDamageTimeline</code></td><td>All observations, the ticket, and the closing, with pages</td><td class="n">P14</td><td class="c"><span class="tag k">New</span></td></tr>
+<tr><td class="c"><code>GET /api/potholes/stats</code></td><td class="c"><code>GetDamageStats</code></td><td>Count, trend, speed, and money per district, and recurring places</td><td class="n">P15</td><td class="c"><span class="tag k">New</span></td></tr>
+<tr><td class="c"><code>GET /api/public/repairs</code></td><td class="c"><code>ListPublicRepairs</code></td><td>Potholes closed as "repaired", with before and after photos</td><td class="n">P16</td><td class="c"><span class="tag k">New</span></td></tr>
+    </tbody>
+  </table></div>
+
+  <h3 class="sub">Pothole list filters</h3>
+  <p>All filters are optional and are sent in the query string. The map filters are the same, except <code>page</code> and <code>sort</code>.</p>
+  <div class="tw"><table>
+    <thead><tr><th>Filter</th><th>Meaning</th><th>Status</th></tr></thead>
+    <tbody>
+<tr><td class="c"><code>district</code></td><td>The district</td><td class="c"><span class="tag done">Exists</span></td></tr>
+<tr><td class="c"><code>neighborhood</code></td><td>The neighborhood</td><td class="c"><span class="tag k">New</span></td></tr>
+<tr><td class="c"><code>road</code></td><td>The street name</td><td class="c"><span class="tag k">New</span></td></tr>
+<tr><td class="c"><code>bbox</code></td><td>The box visible on the map (min and max longitude and latitude)</td><td class="c"><span class="tag done">Exists</span></td></tr>
+<tr><td class="c"><code>status</code></td><td>Open or closed</td><td class="c"><span class="tag k">New</span></td></tr>
+<tr><td class="c"><code>closedReason</code></td><td>The close reason: repaired, false, duplicate, or resolved another way</td><td class="c"><span class="tag k">New</span></td></tr>
+<tr><td class="c"><code>repairStatus</code></td><td>The repair status from the display-only column; more than one is allowed</td><td class="c"><span class="tag k">New</span></td></tr>
+<tr><td class="c"><code>stage</code> and <code>minStage</code></td><td>The stage, or a given stage and worse</td><td class="c"><span class="tag done">Exists</span></td></tr>
+<tr><td class="c"><code>minSeverity</code></td><td>Severity from X and up</td><td class="c"><span class="tag k">New</span></td></tr>
+<tr><td class="c"><code>minArea</code> and <code>maxArea</code></td><td>Area in square meters</td><td class="c"><span class="tag k">New</span></td></tr>
+<tr><td class="c"><code>minDepth</code> and <code>maxDepth</code></td><td>Depth in centimeters</td><td class="c"><span class="tag k">New</span></td></tr>
+<tr><td class="c"><code>minConfidence</code></td><td>AI confidence from X and up</td><td class="c"><span class="tag k">New</span></td></tr>
+<tr><td class="c"><code>minCost</code> and <code>maxCost</code></td><td>Estimated cost</td><td class="c"><span class="tag k">New</span></td></tr>
+<tr><td class="c"><code>hasOpenWorkOrder</code></td><td>Has an open ticket or not, from the display-only column</td><td class="c"><span class="tag done">Exists</span></td></tr>
+<tr><td class="c"><code>source</code></td><td>The AI, the officer, or a citizen report</td><td class="c"><span class="tag k">New</span></td></tr>
+<tr><td class="c"><code>minSightings</code></td><td>Seen at least this many times</td><td class="c"><span class="tag k">New</span></td></tr>
+<tr><td class="c"><code>firstSeenFrom</code> and <code>firstSeenTo</code></td><td>First seen</td><td class="c"><span class="tag done">Exists</span></td></tr>
+<tr><td class="c"><code>lastSeenFrom</code> and <code>lastSeenTo</code></td><td>Last seen</td><td class="c"><span class="tag k">New</span></td></tr>
+<tr><td class="c"><code>closedFrom</code> and <code>closedTo</code></td><td>When it was closed</td><td class="c"><span class="tag k">New</span></td></tr>
+<tr><td class="c"><code>sort</code></td><td>Most severe, most expensive, newest, or oldest without repair</td><td class="c"><span class="tag k">New</span></td></tr>
+<tr><td class="c"><code>page</code> and <code>pageSize</code></td><td>The page; the default is 20</td><td class="c"><span class="tag done">Exists</span></td></tr>
+    </tbody>
+  </table></div>
+
+  <h3 class="sub">The map</h3>
+  <ul class="plain">
+    <li>It takes the screen bounds and the zoom level, and the same filters.</li>
+    <li>If there are fewer than 500 potholes on the screen <span class="tag def">Default</span>, it returns each pothole on its own: the place, the severity, and the state.</li>
+    <li>If there are more, it returns circles: the circle's place, how many potholes are in it, and the most severe pothole in it, so the circle color can show.</li>
+  </ul>
+
+  <h3 class="sub">Citizen portal</h3>
+  <ul class="plain">
+    <li>No login, so it needs a request limit (rate limit) so nobody can flood it. The number is not decided yet. <span class="tag open">Open</span></li>
+    <li>Returns: the place, the district, the street name, a "before" photo and an "after" photo, and the closing date. Nothing about the crew or the cost.</li>
+    <li>Photos must have faces and plates covered before they appear here. <span class="tag open">Open</span></li>
+    <li>This data does not change much, so it can be cached in Redis longer than the officer screens, for example 10 minutes. <span class="tag def">Default</span></li>
+  </ul>
+
+  <h3 class="sub">New fields in pothole details</h3>
+  <p>These are the fields that will be added to the <code>GetDamageById</code> response and to each row in the list, next to the existing fields:</p>
+  <div class="tw"><table>
+    <thead><tr><th>Field</th><th>What it holds</th></tr></thead>
+    <tbody>
+<tr><td class="c"><code>status</code>, <code>closed_reason</code> and <code>closed_at</code></td><td>Open or closed, the close reason, and when</td></tr>
+<tr><td class="c"><code>duplicate_of_id</code></td><td>The other pothole's id if it was closed as "duplicate"</td></tr>
+<tr><td class="c"><code>severity</code></td><td>The severity</td></tr>
+<tr><td class="c"><code>area_m2</code> and <code>depth_cm</code></td><td>The area and the depth</td></tr>
+<tr><td class="c"><code>estimated_cost</code></td><td>The estimated cost, split into materials, labor and equipment</td></tr>
+<tr><td class="c"><code>source</code></td><td>Where it came from: the AI, the officer, or a citizen report</td></tr>
+<tr><td class="c"><code>work_order_id</code> and <code>repair_status</code></td><td>The ticket id and the repair status from the display-only column, so the screen does not need to ask Work Order</td></tr>
+<tr><td class="c"><code>merged_into_id</code></td><td>If it was merged, the id of the remaining pothole (later)</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3 class="sub">Things that happen without an endpoint</h3>
+  <div class="tw"><table>
+    <thead><tr><th>Listens to</th><th>What it does</th><th class="n">Scenario</th></tr></thead>
+    <tbody>
+      <tr><td class="c"><code>RawDetectionReceived</code></td><td>Matching against open potholes, the observation or the new pothole, the estimate, and publishing if something changed</td><td class="n">P5, P8 and P9</td></tr>
+      <tr><td class="c"><code>WorkOrderCreated</code> and <code>WorkOrderStatusChanged</code></td><td>The display-only column if <code>ticket_sequence</code> is newer, and closing the pothole if the ticket was closed</td><td class="n">P6</td></tr>
+      <tr><td class="c"><code>DetectionDismissed</code></td><td>The pothole becomes <code>Closed</code> as "false"</td><td class="n">P7</td></tr>
+      <tr><td class="c"><code>RepairVerificationObserved</code></td><td>An observation of kind "verification pass", with the photo and the result</td><td class="n">P10</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3 class="sub">Errors</h3>
+  <p>The same error table as in the Work Order design. Examples from Pothole:</p>
+  <ul class="plain">
+    <li>The place is outside Istanbul, or the photo is from outside the blob storage: 400.</li>
+    <li>Correcting a <code>Closed</code> pothole: 409 <code>INVALID_STATE</code>.</li>
+    <li>Two officers corrected the same pothole at the same moment: 409 <code>CONFLICT</code>, and the screen reloads.</li>
+  </ul>
+</section>
+
+<section id="changes">
+  <h2>Required changes</h2>
+  <p class="lead">The proto will be rebuilt from scratch, so these changes will go into the same PR.</p>
+  <h3 class="sub">In the Contracts</h3>
+  <div class="tw"><table>
+    <thead><tr><th>Change</th><th>Scenario</th></tr></thead>
+    <tbody>
+      <tr><td><code>ticket_sequence</code> and <code>SourceEntityId</code> in all Work Order messages</td><td>P6</td></tr>
+      <tr><td>The cancel reason in <code>WorkOrderStatusChanged</code>: false, or duplicate (with the other pothole's id), or resolved another way</td><td>P6</td></tr>
+      <tr><td>New messages: <code>VerificationRequested</code> and <code>VerificationEnded</code> from Work Order, and <code>RepairVerificationObserved</code> from the AI</td><td>P10</td></tr>
+      <tr><td><code>PotholeSaved</code>: the estimate fields, a <code>Reason</code> field (new, changed, or corrected), and the severity, size and source</td><td>P5 and P9</td></tr>
+      <tr><td>New commands: add pothole, correct data, and merge (deferred)</td><td>P1, P2 and P3</td></tr>
+      <tr><td><code>ListDamages</code>: filters for state, close reason, repair status, severity, size, confidence, cost, source, count, and sort</td><td>P12 and P13</td></tr>
+      <tr><td><code>DamageDetailResponse</code>: the state, the close reason, the severity, the size, the estimate, the source, and the repair status</td><td>P11</td></tr>
+      <tr><td>New reads for the stats and for the citizen portal</td><td>P15 and P16</td></tr>
+      <tr><td>The pothole's <code>row_version</code> in <code>PotholeSaved</code> (later)</td><td>Out-of-order messages</td></tr>
+    </tbody>
+  </table></div>
+  <h3 class="sub">In the code</h3>
+  <ul class="plain">
+    <li>The two tables with the columns above, <code>row_version</code> as a concurrency token, the <code>recurring_spots</code> table, and the <code>admin_areas</code> table.</li>
+    <li>Matching only against open potholes, and the "false less than 30 days ago" exception for the AI only.</li>
+    <li>The default numbers in the config: 3 meters, 50%, 30 days, 2 verification passes, and 14 days.</li>
+    <li>Pothole's own estimator inside the service: the static class <code>PotholeEstimator</code>, with the prices in the config.</li>
+    <li>Consumers for <code>WorkOrderCreated</code>, <code>WorkOrderStatusChanged</code>, <code>DetectionDismissed</code> and <code>RepairVerificationObserved</code>.</li>
+    <li>The job for recurring places.</li>
+  </ul>
+</section>
+
+<section id="open">
+  <h2>Open and deferred</h2>
+  <h3 class="sub">Open</h3>
+  <ul class="plain">
+    <li>The recurring places job: how far back does it look, and how often does it run? (P17)</li>
+    <li>Post-repair check: when does the vehicle get the list, and what if it is offline? (P10)</li>
+    <li>Automatic rejection when the vehicle says "still there" <span class="tag later">Deferred</span>. For now, only an alert to the officer. (P10)</li>
+    <li>Stats: what else does the officer need to see beyond P15?</li>
+    <li>Covering faces and car plates: in the AI before the photo is saved, or only before publishing on the portal?</li>
+  </ul>
+  <h3 class="sub">Deferred</h3>
+  <ul class="plain">
+    <li>The lock on grid cell borders. Until it is built, duplicate potholes are closed as "duplicate".</li>
+    <li>Ordering <code>PotholeSaved</code> messages by <code>row_version</code>.</li>
+    <li>Merge.</li>
+  </ul>
+  <footer class="end">Next step: the Pothole domain: the main record, the matching decision, and closing, as code.</footer>
+</section>
+</main>
+</div>
+</body>
+</html>
