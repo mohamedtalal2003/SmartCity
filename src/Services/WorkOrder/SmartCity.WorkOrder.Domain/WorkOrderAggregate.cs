@@ -31,7 +31,8 @@ public class WorkOrderAggregate
     public SourceEntityType SourceEntityType { get; private set; }
     public Guid CorrelationId { get; private set; }
     public GeoLocation Location { get; private set; } = default!;
-    public District District { get; private set; }
+    public int? DistrictId { get; private set; }       // Istanbul district id; null = unknown
+    public string? DistrictName { get; private set; }  // e.g. "Kadıköy"
     public WorkOrderCategory Category { get; private set; }
     public PriorityLevel Priority { get; private set; }
     public WorkOrderStatus Status { get; private set; }
@@ -61,7 +62,8 @@ public class WorkOrderAggregate
         SourceEntityType sourceEntityType,
         Guid correlationId,
         GeoLocation location,
-        District district,
+        int? districtId,
+        string? districtName,
         WorkOrderCategory category,
         PriorityLevel priority,
         string title,
@@ -77,7 +79,8 @@ public class WorkOrderAggregate
             SourceEntityType = sourceEntityType,
             CorrelationId = correlationId,
             Location = location,
-            District = district,
+            DistrictId = districtId,
+            DistrictName = districtName,
             Category = category,
             Priority = priority,
             Status = WorkOrderStatus.Pending,

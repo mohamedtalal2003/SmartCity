@@ -73,10 +73,11 @@ app.MapGet("/api/work-orders", async (
             request.Statuses.Add(s);
     }
 
+    // district = an Istanbul district id (from the Pothole service's admin areas).
     if (!string.IsNullOrEmpty(district))
     {
-        if (Enum.TryParse<Smartcity.Enums.V1.District>(district, true, out var d))
-            request.Districts.Add(d);
+        if (int.TryParse(district, out var districtId))
+            request.DistrictIds.Add(districtId);
     }
 
     return await CallGrpc(async () =>
@@ -255,7 +256,7 @@ app.MapGet("/api/potholes", async ([FromQuery] string? bbox, RoadDamageQueryServ
             {
                 damageId = r.DamageId,
                 stage = r.Stage.ToString(),
-                district = r.District.ToString(),
+                district = r.DistrictName,
                 roadName = r.RoadName,
                 latestImageUrl = r.LatestImageUrl,
                 detectionCount = r.DetectionCount,

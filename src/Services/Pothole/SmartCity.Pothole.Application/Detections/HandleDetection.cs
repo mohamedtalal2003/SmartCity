@@ -60,7 +60,10 @@ public sealed class HandleDetection
         {
             var changed = open.AddSighting(detection, _prices);
             if (changed)
-                await _publisher.PublishAsync(ToPotholeSaved(open, message, isNewPothole: false), ct);
+            {
+                var openArea = await _repository.GetAreaAsync(open.DistrictId, open.NeighborhoodId, ct);
+                await _publisher.PublishAsync(ToPotholeSaved(open, openArea, message, isNewPothole: false), ct);
+            }
 
             await _repository.SaveChangesAsync(ct);
             _logger.LogInformation("Detection {DetectionId} added to pothole {PotholeId} (sighting {Count}, changed: {Changed})",
@@ -92,7 +95,7 @@ public sealed class HandleDetection
         var area = await _repository.FindAreaAsync(detection.Location, ct);
         var pothole = Pothole.FromDetection(detection, area.DistrictId, area.NeighborhoodId, _prices);
         _repository.Add(pothole);
-        await _publisher.PublishAsync(ToPotholeSaved(pothole, message, isNewPothole: true), ct);
+        await _publisher.PublishAsync(ToPotholeSaved(pothole, area, message, isNewPothole: true), ct);
 
         // 6. One save: the outbox commits the row and the event together.
         await _repository.SaveChangesAsync(ct);
@@ -142,7 +145,7 @@ public sealed class HandleDetection
         return SeverityLevel.Critical;
     }
 
-    private static PotholeSaved ToPotholeSaved(Pothole pothole, RawDetectionReceived message, bool isNewPothole) => new()
+    private static PotholeSaved ToPotholeSaved(Pothole pothole, AreaMatch area, RawDetectionReceived message, bool isNewPothole) => new()
     {
         // Invariant 5: copy CorrelationId unchanged and set SourceDetectionId, so the trace works.
         CorrelationId = message.CorrelationId,
@@ -153,9 +156,10 @@ public sealed class HandleDetection
         FirstSeenAt = pothole.FirstSeenAt,
         LastSeenAt = pothole.LastSeenAt,
         Location = new GeoLocation { Latitude = pothole.Location.Latitude, Longitude = pothole.Location.Longitude },
-        // SKELETON: the District enum only has wrong-city names. After the contract PR, send the
-        // district id and name instead.
-        District = District.Unspecified,
+        DistrictId = area.DistrictId,
+        DistrictName = area.DistrictName,
+        NeighborhoodId = area.NeighborhoodId,
+        NeighborhoodName = area.NeighborhoodName,
         RoadName = pothole.RoadName,
         DetectionType = pothole.DamageType,
         Stage = pothole.CurrentStage,

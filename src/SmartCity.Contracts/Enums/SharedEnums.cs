@@ -4,14 +4,6 @@ namespace SmartCity.Contracts.Enums;
 // so the same integer means the same thing in events, gRPC, and the database.
 // Change both files together or not at all.
 
-public enum District
-{
-    Unspecified = 0,
-    Meram = 1,
-    Selcuklu = 2,
-    Karatay = 3
-}
-
 public enum SourceEntityType
 {
     Unspecified = 0,

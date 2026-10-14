@@ -247,7 +247,6 @@ namespace SmartCity.WorkOrder.Api.Data.Migrations
             modelBuilder.Entity("SmartCity.WorkOrder.Domain.StatusHistoryEntry", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
                     b.Property<DateTimeOffset>("ChangedAt")
@@ -314,8 +313,10 @@ namespace SmartCity.WorkOrder.Api.Data.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<string>("District")
-                        .IsRequired()
+                    b.Property<int?>("DistrictId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("DistrictName")
                         .HasColumnType("text");
 
                     b.Property<decimal?>("EstimatedCost")

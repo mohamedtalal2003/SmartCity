@@ -101,10 +101,5 @@ enum PauseReason {
   PAUSE_REASON_OTHER = 5;
 }
 
-// Districts of Konya (partition key for several services).
-enum District {
-  DISTRICT_UNSPECIFIED = 0;
-  DISTRICT_MERAM = 1;
-  DISTRICT_SELCUKLU = 2;
-  DISTRICT_KARATAY = 3;
-}
+// District was removed: Istanbul has 39 districts and 964 neighborhoods, too many for an enum.
+// Messages now carry district_id / district_name / neighborhood_id / neighborhood_name instead.

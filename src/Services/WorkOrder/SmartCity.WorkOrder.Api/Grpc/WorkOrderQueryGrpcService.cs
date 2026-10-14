@@ -41,12 +41,10 @@ public sealed class WorkOrderQueryGrpcService : WorkOrderQueryService.WorkOrderQ
             query = query.Where(w => statuses.Contains(w.Status));
         }
 
-        if (request.Districts.Count > 0)
+        if (request.DistrictIds.Count > 0)
         {
-            var districts = request.Districts
-                .Select(d => (Contracts.Enums.District)(int)d)
-                .ToHashSet();
-            query = query.Where(w => districts.Contains(w.District));
+            var districtIds = request.DistrictIds.ToList();
+            query = query.Where(w => w.DistrictId != null && districtIds.Contains(w.DistrictId.Value));
         }
 
         if (request.OverdueOnly)
@@ -91,7 +89,8 @@ public sealed class WorkOrderQueryGrpcService : WorkOrderQueryService.WorkOrderQ
         SourceEntityType = (Smartcity.Enums.V1.SourceEntityType)(int)w.SourceEntityType,
         Status = (Smartcity.Enums.V1.WorkOrderStatus)(int)w.Status,
         Priority = (Smartcity.Enums.V1.PriorityLevel)(int)w.Priority,
-        District = (Smartcity.Enums.V1.District)(int)w.District,
+        DistrictId = w.DistrictId ?? 0,
+        DistrictName = w.DistrictName ?? "",
         Location = new GeoCoordinates
         {
             Latitude = w.Location.Latitude,

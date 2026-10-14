@@ -17,7 +17,10 @@ public record AssetAddedOrUpdated : IntegrationEvent
 
     public DateTimeOffset DetectedAt { get; init; }
     public GeoLocation Location { get; init; } = default!;
-    public District District { get; init; }
+    public int? DistrictId { get; init; }                 // Istanbul district (ilçe) id; null = unknown
+    public string? DistrictName { get; init; }            // e.g. "Kadıköy"
+    public int? NeighborhoodId { get; init; }             // Istanbul neighborhood (mahalle) id; null = unknown
+    public string? NeighborhoodName { get; init; }        // e.g. "Caferağa Mahallesi"
     public string? RoadName { get; init; }
 
     public AssetType AssetType { get; init; }

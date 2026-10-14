@@ -36,8 +36,8 @@ public sealed class RoadDamageQueryGrpcService : RoadDamageQueryService.RoadDama
     {
         IQueryable<Pothole> query = _db.Potholes.AsNoTracking();
 
-        // SKELETON: the districts filter uses the old District enum (wrong city), so it is ignored until the
-        // contract PR brings district ids.
+        // SKELETON: district_ids, neighborhood_ids and the other new filters are not applied yet. They come
+        // with the pothole list PR (P12).
 
         if (request.MapArea is not null)
         {
@@ -111,7 +111,7 @@ public sealed class RoadDamageQueryGrpcService : RoadDamageQueryService.RoadDama
             ? id
             : throw new RpcException(new Status(StatusCode.InvalidArgument, "Invalid damage_id"));
 
-    // The columns the responses need, plus the image of the newest observation.
+    // The columns the responses need, the area names, and the image of the newest observation.
     private IQueryable<PotholeRow> ToRows(IQueryable<Pothole> potholes) =>
         potholes.Select(p => new PotholeRow(
             p.Id,
@@ -127,14 +127,20 @@ public sealed class RoadDamageQueryGrpcService : RoadDamageQueryService.RoadDama
                 .Where(o => o.PotholeId == p.Id)
                 .OrderByDescending(o => o.SeenAt)
                 .Select(o => o.ImageUrl)
-                .FirstOrDefault()));
+                .FirstOrDefault(),
+            p.DistrictId,
+            _db.AdminAreas.Where(a => a.Id == p.DistrictId).Select(a => a.Name).FirstOrDefault(),
+            p.NeighborhoodId,
+            _db.AdminAreas.Where(a => a.Id == p.NeighborhoodId).Select(a => a.Name).FirstOrDefault()));
 
     private static DamageDetailResponse ToResponse(PotholeRow row) => new()
     {
         DamageId = row.Id.ToString(),
         Stage = (Smartcity.Enums.V1.DamageStage)(int)row.Stage,
-        // SKELETON: the proto's district is the old District enum (wrong city). Send the district id and name after the contract PR.
-        District = Smartcity.Enums.V1.District.Unspecified,
+        DistrictId = row.DistrictId ?? 0,
+        DistrictName = row.DistrictName ?? "",
+        NeighborhoodId = row.NeighborhoodId ?? 0,
+        NeighborhoodName = row.NeighborhoodName ?? "",
         Location = new GeoCoordinates { Latitude = row.Location.Latitude, Longitude = row.Location.Longitude },
         RoadName = row.RoadName ?? "",
         LatestImageUrl = row.LatestImageUrl ?? "",
@@ -155,5 +161,9 @@ public sealed class RoadDamageQueryGrpcService : RoadDamageQueryService.RoadDama
         int SightingsCount,
         DateTimeOffset FirstSeenAt,
         DateTimeOffset LastSeenAt,
-        string? LatestImageUrl);
+        string? LatestImageUrl,
+        int? DistrictId,
+        string? DistrictName,
+        int? NeighborhoodId,
+        string? NeighborhoodName);
 }

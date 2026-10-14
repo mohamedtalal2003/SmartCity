@@ -29,7 +29,7 @@ public sealed class PotholeSavedConsumer : IConsumer<PotholeSaved>
         {
             Id = Guid.NewGuid(),
             CorrelationId = msg.CorrelationId,
-            Title = $"New pothole detected — {msg.District}",
+            Title = msg.DistrictName is null ? "New pothole detected" : $"New pothole detected — {msg.DistrictName}",
             Body = $"Severity: {msg.Severity}, Type: {msg.DetectionType}, Confidence: {msg.Confidence:P0}",
             RelatedEntityId = msg.PotholeId,
             RelatedEntityType = SourceEntityType.RoadDamage,
