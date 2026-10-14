@@ -153,7 +153,7 @@ public sealed class HandleDetection
         FirstSeenAt = pothole.FirstSeenAt,
         LastSeenAt = pothole.LastSeenAt,
         Location = new GeoLocation { Latitude = pothole.Location.Latitude, Longitude = pothole.Location.Longitude },
-        // SKELETON: the District enum only has the old Konya names. After the contract PR, send the
+        // SKELETON: the District enum only has wrong-city names. After the contract PR, send the
         // district id and name instead.
         District = District.Unspecified,
         RoadName = pothole.RoadName,

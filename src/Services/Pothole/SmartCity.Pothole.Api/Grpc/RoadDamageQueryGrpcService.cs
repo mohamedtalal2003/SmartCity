@@ -36,7 +36,7 @@ public sealed class RoadDamageQueryGrpcService : RoadDamageQueryService.RoadDama
     {
         IQueryable<Pothole> query = _db.Potholes.AsNoTracking();
 
-        // SKELETON: the districts filter uses the old Konya District enum, so it is ignored until the
+        // SKELETON: the districts filter uses the old District enum (wrong city), so it is ignored until the
         // contract PR brings district ids.
 
         if (request.MapArea is not null)
@@ -133,7 +133,7 @@ public sealed class RoadDamageQueryGrpcService : RoadDamageQueryService.RoadDama
     {
         DamageId = row.Id.ToString(),
         Stage = (Smartcity.Enums.V1.DamageStage)(int)row.Stage,
-        // SKELETON: the proto's district is the old Konya enum. Send the district id and name after the contract PR.
+        // SKELETON: the proto's district is the old District enum (wrong city). Send the district id and name after the contract PR.
         District = Smartcity.Enums.V1.District.Unspecified,
         Location = new GeoCoordinates { Latitude = row.Location.Latitude, Longitude = row.Location.Longitude },
         RoadName = row.RoadName ?? "",
