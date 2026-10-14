@@ -19,6 +19,31 @@ enum DamageStage {
   DAMAGE_STAGE_POTHOLE = 7;             // Çukur Oluşumu
 }
 
+// Pothole state. Closed is final.
+enum PotholeStatus {
+  POTHOLE_STATUS_UNSPECIFIED = 0;
+  POTHOLE_STATUS_OPEN = 1;
+  POTHOLE_STATUS_CLOSED = 2;
+}
+
+// Why a pothole was closed.
+enum ClosedReason {
+  CLOSED_REASON_UNSPECIFIED = 0;
+  CLOSED_REASON_REPAIRED = 1;           // the ticket was completed
+  CLOSED_REASON_FALSE_POSITIVE = 2;     // the AI was wrong (starts the 30-day rule)
+  CLOSED_REASON_DUPLICATE = 3;          // the same pothole as duplicate_of_id
+  CLOSED_REASON_RESOLVED_OTHERWISE = 4; // e.g. the whole street was repaved
+}
+
+// Sort order for pothole lists.
+enum DamageSort {
+  DAMAGE_SORT_UNSPECIFIED = 0;          // server default (newest first)
+  DAMAGE_SORT_NEWEST = 1;               // newest first seen
+  DAMAGE_SORT_MOST_SEVERE = 2;          // highest severity first
+  DAMAGE_SORT_MOST_EXPENSIVE = 3;       // highest estimated cost first
+  DAMAGE_SORT_OLDEST_UNREPAIRED = 4;    // open the longest first
+}
+
 // Who reported a pothole first.
 enum PotholeSource {
   POTHOLE_SOURCE_UNSPECIFIED = 0;
@@ -80,6 +105,36 @@ enum SourceEntityType {
   SOURCE_ENTITY_TYPE_ASSET_DAMAGE = 2;
   SOURCE_ENTITY_TYPE_VIOLATION = 3;
   SOURCE_ENTITY_TYPE_BUILDING_ANOMALY = 4;
+}
+
+// What the cloud AI detected. Numeric ranges route the detection:
+// 100s → Pothole, 200s → Inventory, 300s → Violation, 400s → Building.
+// (Existed in C# only; added here so both stay the same.)
+enum DetectionType {
+  DETECTION_TYPE_UNSPECIFIED = 0;
+  DETECTION_TYPE_POTHOLE = 100;
+  DETECTION_TYPE_ROAD_CRACK = 101;
+  DETECTION_TYPE_SURFACE_DAMAGE = 102;
+  DETECTION_TYPE_TRAFFIC_LIGHT = 200;
+  DETECTION_TYPE_TRAFFIC_SIGN = 201;
+  DETECTION_TYPE_STREET_LIGHT = 202;
+  DETECTION_TYPE_BARRIER = 203;
+  DETECTION_TYPE_STREET_FURNITURE = 204;
+  DETECTION_TYPE_COMMERCIAL_SIGN = 300;
+  DETECTION_TYPE_BANNER = 301;
+  DETECTION_TYPE_BILLBOARD = 302;
+  DETECTION_TYPE_SCAFFOLDING = 400;
+  DETECTION_TYPE_CONSTRUCTION_SITE = 401;
+  DETECTION_TYPE_BUILDING_FACADE = 402;
+}
+
+// How bad a detected problem is. (Existed in C# only; added here so both stay the same.)
+enum SeverityLevel {
+  SEVERITY_LEVEL_UNSPECIFIED = 0;
+  SEVERITY_LEVEL_LOW = 1;
+  SEVERITY_LEVEL_MEDIUM = 2;
+  SEVERITY_LEVEL_HIGH = 3;
+  SEVERITY_LEVEL_CRITICAL = 4;
 }
 
 // Priority shared by work orders and suggested by cost calc.

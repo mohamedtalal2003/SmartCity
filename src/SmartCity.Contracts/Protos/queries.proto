@@ -21,25 +21,65 @@ import "enums.proto";
 service RoadDamageQueryService {
   rpc GetDamageById (GetDamageRequest) returns (DamageDetailResponse);
   rpc ListDamages (ListDamagesRequest) returns (ListDamagesResponse);
-  rpc GetDamageTimeline (GetDamageRequest) returns (DamageTimelineResponse);
+  rpc GetDamagesOnMap (DamagesOnMapRequest) returns (DamagesOnMapResponse);
+  rpc GetDamageTimeline (GetDamageTimelineRequest) returns (DamageTimelineResponse);
 }
 
-// Full history of one damage cluster: every time it was seen, and
-// every stage change, oldest first.
+// Full history of one pothole: every time it was seen, corrected or
+// checked, newest first, in pages.
 message DamageTimelineResponse {
   string damage_id = 1;
   repeated TimelineEntry entries = 2;
+  smartcity.common.v1.PaginationResponse pagination = 3;
 }
 
+// Also used by AssetTimelineResponse; fields 5–8 are for road damage only.
 message TimelineEntry {
   int64 timestamp_utc = 1;
   string event_type = 2;        // "DETECTED", "RE_DETECTED", "STAGE_CHANGED", "WORK_ORDER_CREATED", "REPAIRED"
   string detail = 3;            // human-readable summary
   string image_url = 4;         // snapshot at this point, if any
+  smartcity.enums.v1.DetectionType damage_type = 5;   // what was seen this time (crack, pothole, ...)
+  smartcity.enums.v1.SeverityLevel severity = 6;      // severity at this observation
+  smartcity.enums.v1.DamageStage stage = 7;           // stage at this observation
+  string kind = 8;              // "AiDetection", "OfficerAdd", "Correction", "VerificationPass"
 }
 
 message GetDamageRequest {
   string damage_id = 1;
+}
+
+// Same field 1 as GetDamageRequest, so old callers still work.
+message GetDamageTimelineRequest {
+  string damage_id = 1;
+  smartcity.common.v1.PaginationRequest pagination = 2;   // newest first
+}
+
+// Potholes inside the screen bounds. With many potholes the server groups
+// them into clusters instead of single points.
+message DamagesOnMapRequest {
+  smartcity.common.v1.BoundingBox map_area = 1;           // the screen bounds
+  int32 zoom = 2;                                         // map zoom level
+  ListDamagesRequest filters = 3;                         // same filters as the list; its map_area, pagination and sort are ignored
+}
+
+// One of the two lists is filled: points when there are few potholes, clusters when there are many.
+message DamagesOnMapResponse {
+  repeated DamagePoint points = 1;
+  repeated DamageCluster clusters = 2;
+}
+
+message DamagePoint {
+  string damage_id = 1;
+  smartcity.common.v1.GeoCoordinates location = 2;
+  smartcity.enums.v1.SeverityLevel severity = 3;
+  smartcity.enums.v1.PotholeStatus status = 4;
+}
+
+message DamageCluster {
+  smartcity.common.v1.GeoCoordinates center = 1;          // where to draw the circle
+  int32 count = 2;                                        // potholes in it
+  smartcity.enums.v1.SeverityLevel max_severity = 3;      // the worst one, for the circle color
 }
 
 message ListDamagesRequest {
@@ -55,6 +95,23 @@ message ListDamagesRequest {
   smartcity.common.v1.PaginationRequest pagination = 8;
   repeated int32 district_ids = 9;                         // empty = all districts
   repeated int32 neighborhood_ids = 10;                    // empty = all neighborhoods
+  repeated smartcity.enums.v1.PotholeStatus statuses = 11;        // empty = open and closed
+  repeated smartcity.enums.v1.ClosedReason closed_reasons = 12;   // empty = any reason
+  repeated string repair_statuses = 13;                    // ticket status copy, e.g. "OnSite"; empty = any
+  smartcity.enums.v1.SeverityLevel min_severity = 14;      // UNSPECIFIED = any
+  double min_area_m2 = 15;                                 // 0 = no limit
+  double max_area_m2 = 16;                                 // 0 = no limit
+  double min_depth_cm = 17;                                // 0 = no limit
+  double max_depth_cm = 18;                                // 0 = no limit
+  double min_confidence = 19;                              // 0 = no limit
+  double min_cost = 20;                                    // estimated total; 0 = no limit
+  double max_cost = 21;                                    // estimated total; 0 = no limit
+  repeated smartcity.enums.v1.PotholeSource sources = 22;  // empty = any source
+  int32 min_sightings = 23;                                // seen at least this many times; 0 = no limit
+  string road_name = 24;                                   // empty = any road
+  smartcity.common.v1.TimeRange last_seen = 25;            // empty = any time
+  smartcity.common.v1.TimeRange closed = 26;               // when it was closed; empty = any time
+  smartcity.enums.v1.DamageSort sort = 27;                 // UNSPECIFIED = newest first
 }
 
 message DamageDetailResponse {
@@ -73,6 +130,23 @@ message DamageDetailResponse {
   string district_name = 12;            // e.g. "Kadıköy"; empty = unknown
   int32 neighborhood_id = 13;           // Istanbul neighborhood id; 0 = unknown
   string neighborhood_name = 14;        // e.g. "Caferağa Mahallesi"; empty = unknown
+  smartcity.enums.v1.PotholeStatus status = 15;         // Open or Closed
+  smartcity.enums.v1.ClosedReason closed_reason = 16;   // UNSPECIFIED while open
+  int64 closed_at_utc = 17;             // 0 while open
+  string duplicate_of_id = 18;          // the other pothole when closed as DUPLICATE; else empty
+  smartcity.enums.v1.SeverityLevel severity = 19;       // current severity
+  smartcity.enums.v1.DetectionType damage_type = 20;    // POTHOLE, ROAD_CRACK or SURFACE_DAMAGE
+  double area_m2 = 21;                  // 0 = not measured
+  double depth_cm = 22;                 // 0 = not measured
+  double confidence = 23;               // AI confidence of the latest detection
+  smartcity.enums.v1.PotholeSource source = 24;         // who reported it first
+  double estimated_total = 25;          // repair estimate total
+  double estimated_materials = 26;      // materials part of the estimate
+  double estimated_labor = 27;          // labor part of the estimate
+  double estimated_equipment = 28;      // equipment part of the estimate
+  string currency = 29;                 // "TRY"
+  string work_order_id = 30;            // the ticket (also after closing); empty if none
+  string repair_status = 31;            // display copy of the ticket status, e.g. "OnSite"; empty if no ticket
 }
 
 message ListDamagesResponse {

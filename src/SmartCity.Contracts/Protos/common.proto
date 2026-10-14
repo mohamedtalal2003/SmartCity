@@ -64,4 +64,5 @@ message CommandResponse {
   string entity_id = 4;         // ID of the created or affected entity
   string request_id = 5;        // echoes CommandMetadata.idempotency_key
   int64 processed_at_utc = 6;   // server timestamp, epoch ms
+  bool created = 7;             // true = a new entity was made; false = an existing one was used (e.g. AddPothole next to a known pothole)
 }

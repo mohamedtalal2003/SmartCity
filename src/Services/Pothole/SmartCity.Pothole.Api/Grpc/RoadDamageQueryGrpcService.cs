@@ -71,7 +71,7 @@ public sealed class RoadDamageQueryGrpcService : RoadDamageQueryService.RoadDama
         return response;
     }
 
-    public override async Task<DamageTimelineResponse> GetDamageTimeline(GetDamageRequest request, ServerCallContext context)
+    public override async Task<DamageTimelineResponse> GetDamageTimeline(GetDamageTimelineRequest request, ServerCallContext context)
     {
         var id = ParseId(request.DamageId);
         var ct = context.CancellationToken;
@@ -86,8 +86,9 @@ public sealed class RoadDamageQueryGrpcService : RoadDamageQueryService.RoadDama
             .Select(o => o.Id)
             .FirstAsync(ct);
 
-        // SKELETON: the request has no paging yet, so only the newest 200 observations are returned.
-        // Ticket and closing entries come with the contract PR.
+        // SKELETON: request.pagination is not used yet, so only the newest 200 observations are returned,
+        // and the new entry fields (damage_type, severity, stage, kind) are not filled. Paging, ticket and
+        // closing entries come with the timeline PR (P14).
         var observations = await _db.Observations
             .AsNoTracking()
             .Where(o => o.PotholeId == id)
@@ -133,6 +134,8 @@ public sealed class RoadDamageQueryGrpcService : RoadDamageQueryService.RoadDama
             p.NeighborhoodId,
             _db.AdminAreas.Where(a => a.Id == p.NeighborhoodId).Select(a => a.Name).FirstOrDefault()));
 
+    // SKELETON: the newer DamageDetailResponse fields (status, closed reason, severity, size, estimate,
+    // source, work order, repair status) are not filled yet. They come with the pothole details PR (P11).
     private static DamageDetailResponse ToResponse(PotholeRow row) => new()
     {
         DamageId = row.Id.ToString(),

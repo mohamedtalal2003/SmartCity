@@ -2,6 +2,34 @@ namespace SmartCity.Contracts.Enums;
 
 // Mirrors Protos/enums.proto (same names, same numbers).
 
+/// <summary>Pothole state. Closed is final.</summary>
+public enum PotholeStatus
+{
+    Unspecified = 0,
+    Open = 1,
+    Closed = 2
+}
+
+/// <summary>Why a pothole was closed.</summary>
+public enum ClosedReason
+{
+    Unspecified = 0,
+    Repaired = 1,           // the ticket was completed
+    FalsePositive = 2,      // the AI was wrong (starts the 30-day rule)
+    Duplicate = 3,          // the same pothole as another one
+    ResolvedOtherwise = 4   // e.g. the whole street was repaved
+}
+
+/// <summary>Sort order for pothole lists.</summary>
+public enum DamageSort
+{
+    Unspecified = 0,        // server default (newest first)
+    Newest = 1,
+    MostSevere = 2,
+    MostExpensive = 3,
+    OldestUnrepaired = 4
+}
+
 /// <summary>Who reported a pothole first.</summary>
 public enum PotholeSource
 {
