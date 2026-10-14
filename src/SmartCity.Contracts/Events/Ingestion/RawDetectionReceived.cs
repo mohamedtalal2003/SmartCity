@@ -34,6 +34,11 @@ public record RawDetectionReceived : IntegrationEvent
     public double BboxWidth { get; init; }
     public double BboxHeight { get; init; }
 
+    // Road damage measurements (null until the AI sends them)
+    public DamageStage? Stage { get; init; }              // damage stage seen by the AI
+    public double? AreaM2 { get; init; }                  // damaged area in m²
+    public double? DepthCm { get; init; }                 // depth in cm (Metadata["estimated_depth_cm"] stays for now)
+
     // Evidence
     public string ImageUrl { get; init; } = default!;     // the frame's blob URL
 

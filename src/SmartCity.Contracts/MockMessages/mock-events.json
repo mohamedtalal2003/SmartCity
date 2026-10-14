@@ -47,6 +47,9 @@
     "ModelName": "fake-ai",
     "ModelVersion": "0.1.0-skeleton",
     "BboxX": 0.42, "BboxY": 0.71, "BboxWidth": 0.12, "BboxHeight": 0.08,
+    "Stage": null,
+    "AreaM2": null,
+    "DepthCm": null,
     "ImageUrl": "http://localhost:9000/frames-temp/MUN-VEH-042/2026-10-01/3f2a0000-0000-4000-8000-000000000001.jpg",
     "Metadata": { "estimated_depth_cm": "6" }
   },
@@ -58,7 +61,9 @@
     "PotholeId": "b0000000-0000-4000-8000-000000000001",
     "SourceDetectionId": "d0000000-0000-4000-8000-000000000001",
     "IsNewPothole": true,
+    "Reason": "New",
     "DetectionCount": 1,
+    "RowVersion": 0,
     "FirstSeenAt": "2026-10-01T08:15:01.900Z",
     "LastSeenAt": "2026-10-01T08:15:01.900Z",
     "Location": { "Latitude": 40.9850, "Longitude": 29.0300, "AccuracyMeters": 2.1 },
@@ -72,6 +77,18 @@
     "Severity": "High",
     "EstimatedSize": { "WidthMeters": 0.6, "HeightMeters": 0.45, "DepthMeters": 0.06, "AreaSquareMeters": 0.27 },
     "Confidence": 0.91,
+    "Source": "Ai",
+    "Estimate": {
+      "Materials": 900.00,
+      "Labor": 1200.00,
+      "Equipment": 400.00,
+      "Total": 2500.00,
+      "Currency": "TRY",
+      "LaborHours": 3.0,
+      "CrewSize": 3,
+      "SuggestedPriority": "High",
+      "MaterialItems": [ { "Name": "Soğuk asfalt", "Quantity": 1.5, "Unit": "m³", "UnitCost": 600.00, "TotalCost": 900.00 } ]
+    },
     "ImageUrls": [ "http://localhost:9000/frames-temp/MUN-VEH-042/2026-10-01/3f2a0000-0000-4000-8000-000000000001.jpg" ]
   },
   "CostEstimateGenerated": {

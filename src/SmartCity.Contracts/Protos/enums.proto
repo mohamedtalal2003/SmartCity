@@ -19,6 +19,22 @@ enum DamageStage {
   DAMAGE_STAGE_POTHOLE = 7;             // Çukur Oluşumu
 }
 
+// Who reported a pothole first.
+enum PotholeSource {
+  POTHOLE_SOURCE_UNSPECIFIED = 0;
+  POTHOLE_SOURCE_AI = 1;                // vehicle camera + cloud AI
+  POTHOLE_SOURCE_OFFICER = 2;           // added by an officer
+  POTHOLE_SOURCE_CITIZEN_REPORT = 3;    // added by an officer from a citizen report
+}
+
+// Why PotholeSaved was published (the event is bus-only; mirrored here for the enum rule).
+enum PotholeSavedReason {
+  POTHOLE_SAVED_REASON_UNSPECIFIED = 0;
+  POTHOLE_SAVED_REASON_NEW = 1;
+  POTHOLE_SAVED_REASON_CHANGED = 2;
+  POTHOLE_SAVED_REASON_CORRECTED = 3;
+}
+
 // ─── Urban inventory (Inventory service) ─────────────────────
 enum AssetCategory {
   ASSET_CATEGORY_UNSPECIFIED = 0;
