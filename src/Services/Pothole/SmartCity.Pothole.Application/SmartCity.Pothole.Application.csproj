@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Description>Pothole use cases. Knows the domain and the ports it needs; never EF or MassTransit.</Description>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- For Options, Logging and DI abstractions only (same as BuildingBlocks); no new packages. -->
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../SmartCity.Pothole.Domain/SmartCity.Pothole.Domain.csproj" />
+    <!-- Publishing PotholeSaved is part of the use case, so the events are used here. -->
+    <ProjectReference Include="../../../SmartCity.Contracts/SmartCity.Contracts.csproj" />
+  </ItemGroup>
+</Project>
