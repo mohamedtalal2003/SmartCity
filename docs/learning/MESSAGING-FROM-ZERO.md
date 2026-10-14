@@ -435,7 +435,7 @@ await publishEndpoint.PublishEvent(frameReceived);
 9 خدمات بتكتب logs في نفس المكان (Seq). سطر زي:
 
 ```
-Saved pothole 7f3a… (Pothole, High) in Meram
+Saved pothole 7f3a… (Pothole, High) in Kadıköy
 ```
 
 تبع أنهي صورة؟ مش باين. ولو طلبنا من كل مبرمج يكتب الـ`CorrelationId` بإيده في كل سطر log، حد هينسى.

@@ -146,7 +146,7 @@ public class WorkOrderCostReconciliationConsumerTests : IDisposable
             sourceEntityId: sourceEntityId,
             sourceEntityType: SourceEntityType.RoadDamage,
             correlationId: Guid.NewGuid(),
-            location: new GeoLocation { Latitude = 37.87, Longitude = 32.49 },
+            location: new GeoLocation { Latitude = 40.985, Longitude = 29.030 },
             district: District.Meram,
             category: WorkOrderCategory.RoadRepair,
             priority: PriorityLevel.Medium,

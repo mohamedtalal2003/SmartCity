@@ -1,7 +1,7 @@
 # SmartCity Monitoring — instructions for Claude Code
 
 ## What this is
-Cameras on Konya municipality vehicles stream frames + telemetry to the cloud. A cloud AI
+Cameras on Istanbul municipality vehicles stream frames + telemetry to the cloud. A cloud AI
 detects road/infrastructure problems (potholes, damaged assets, illegal signs, unsafe
 construction). Detections are stored, costed, turned into work orders, and dispatched to crews.
 

@@ -64,9 +64,9 @@ public class FrameToWorkOrderTests : IAsyncLifetime
         var frameId = Guid.NewGuid();
         var vehicleId = "MUN-VEH-001";
         var capturedAt = DateTimeOffset.UtcNow;
-        // Meram district coordinates
-        const double lat = 37.851;
-        const double lon = 32.432;
+        // Kadıköy district coordinates
+        const double lat = 40.985;
+        const double lon = 29.030;
 
         var frameMsg = new MqttApplicationMessageBuilder()
             .WithTopic($"vehicles/{vehicleId}/frames")

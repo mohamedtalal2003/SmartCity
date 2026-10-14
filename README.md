@@ -1,6 +1,6 @@
 # SmartCity Monitoring
 
-Cameras on Konya municipality vehicles stream frames and telemetry to the cloud.
+Cameras on Istanbul municipality vehicles stream frames and telemetry to the cloud.
 A cloud AI detects road and infrastructure problems (potholes, damaged assets,
 illegal signs, unsafe construction). Detections are stored, costed, turned into
 work orders, and dispatched to crews.

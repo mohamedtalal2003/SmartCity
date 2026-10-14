@@ -89,8 +89,8 @@ One project per service is fine for the skeleton (folders inside for `Consumers/
 ### tools/VehicleSimulator (console)
 - Args: `--vehicles N` (default 5), `--interval-ms` (default 2000), `--frames K` (stop after K
   frames per vehicle; default infinite).
-- Vehicle ids `MUN-VEH-001…`, plates `42 ABC 001…`. Each vehicle drives a small loop of GPS points
-  inside Konya's central districts (Meram ~37.85,32.43 · Selçuklu ~37.94,32.50 · Karatay ~37.87,32.52).
+- Vehicle ids `MUN-VEH-001…`, plates `34 ABC 001…`. Each vehicle drives a small loop of GPS points
+  inside Istanbul's central districts (Kadıköy ~40.985,29.030 · Beşiktaş ~41.043,29.006 · Fatih ~41.012,28.955).
 - Per tick publish two MQTT v5 messages, QoS 1:
   - `vehicles/{vehicleId}/frames` — **payload = raw image bytes**; metadata in MQTT v5 user
     properties: `frameId`, `capturedAt` (ISO UTC), `lat`, `lon`, `accuracy`, `heading`, `speed`,
@@ -106,7 +106,7 @@ One project per service is fine for the skeleton (folders inside for `Consumers/
   `$share/vehiclecomm/vehicles/+/frames` and `$share/vehiclecomm/vehicles/+/telemetry`.
 - Frame handling:
   1. Validate: vehicleId in topic is well formed; required user properties exist; lat/lon inside a
-     Konya bounding box (lat 37.6–38.2, lon 32.2–32.8). Invalid → log a warning with reason, drop.
+     Istanbul bounding box (lat 40.80–41.60, lon 27.95–29.98). Invalid → log a warning with reason, drop.
   2. Upload to bucket `frames-temp`, key `{vehicleId}/{yyyy-MM-dd}/{frameId}.jpg`
      (AWSSDK.S3 via `AddSmartCityBlobStorage`). On startup **in Development only**, call
      `EnsureBucketsAsync("frames-temp", "frames-permanent", "evidence")`.
@@ -238,7 +238,7 @@ One project per service is fine for the skeleton (folders inside for `Consumers/
   ```
   GET  /api/work-orders?status=&district=&overdueOnly=&page=&pageSize=
   GET  /api/work-orders/{id}
-  POST /api/work-orders/{id}/assign       { "crewId": "CREW-MERAM-03" }
+  POST /api/work-orders/{id}/assign       { "crewId": "CREW-KADIKOY-03" }
   POST /api/work-orders/{id}/en-route
   POST /api/work-orders/{id}/on-site
   POST /api/work-orders/{id}/pause        { "reason": "Weather" }

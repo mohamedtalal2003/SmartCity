@@ -170,7 +170,7 @@ var frameReceived = new FrameReceived
 await publishEndpoint.PublishEvent(frameReceived);
 ```
 
-- أول حاجة: validation — الـvehicleId لازم يبدأ بـ`MUN-VEH-` والإحداثيات لازم جوا Konya bounding box (lat 37.6–38.2, lon 32.2–32.8). لو مش صح → log warning ويتجاهلها.
+- أول حاجة: validation — الـvehicleId لازم يبدأ بـ`MUN-VEH-` والإحداثيات لازم جوا Istanbul bounding box (lat 40.80–41.60, lon 27.95–29.98). لو مش صح → log warning ويتجاهلها.
 - بيرفع الصورة لـ`frames-temp` bucket في SeaweedFS (S3-compatible).
 - بينشر `FrameReceived` على RabbitMQ عبر MassTransit. **هنا بيبدأ الـCorrelationId = FrameId** — ده الخيط اللي هيربط كل حاجة ببعض.
 - كمان الـtelemetry بتتكاتش في **Redis** hash: `vehicle:pos:{vehicleId}` بـTTL 60 ثانية.
@@ -183,7 +183,7 @@ await publishEndpoint.PublishEvent(frameReceived);
   "FrameId": "3f2a0000-...-000001",
   "VehicleId": "MUN-VEH-042",
   "CapturedAt": "2026-10-01T08:15:01.900Z",
-  "Location": { "Latitude": 37.8601, "Longitude": 32.4721 },
+  "Location": { "Latitude": 40.9850, "Longitude": 29.0300 },
   "SpeedKmh": 32.5,
   "ImageUrl": "http://localhost:9000/frames-temp/MUN-VEH-042/2026-10-01/3f2a0000-...-000001.jpg"
 }
@@ -400,7 +400,7 @@ var wo = WorkOrderAggregate.Create(
   "Category": "RoadRepair",
   "Priority": "Medium",
   "Status": "Pending",
-  "Title": "Pothole — Meram",
+  "Title": "Pothole — Kadıköy",
   "SlaDueAt": "2026-10-06T08:15:03Z"
 }
 ```
@@ -511,7 +511,7 @@ sequenceDiagram
    ```
    POST /api/work-orders/{id}/assign
    Headers: Idempotency-Key: abc-123
-   Body: { "crewId": "CREW-MERAM-03" }
+   Body: { "crewId": "CREW-KADIKOY-03" }
    ```
    → الحالة بتتغير لـ`Assigned`.
 
@@ -950,7 +950,7 @@ dotnet run --project tools/VehicleSimulator -- --vehicles 3 --frames 5
 
 هتشوف في الـconsole:
 ```
-[08:15:02.120] MUN-VEH-001 frameId=3f2a0000-... lat=37.8500 lon=32.4300
+[08:15:02.120] MUN-VEH-001 frameId=3f2a0000-... lat=40.9850 lon=29.0300
 ```
 
 **خد الـframeId** ده — ده الـCorrelationId بتاعك.
@@ -966,7 +966,7 @@ CorrelationId = '3f2a0000-...'
 ```
 [VehicleCommunication] Frame 3f2a0000 uploaded to S3 and published
 [AiDetection]          Detection d0000000 type=Pothole confidence=0.87 for frame 3f2a0000
-[Pothole]              Saved pothole b0000000 (Pothole, Medium) in Meram
+[Pothole]              Saved pothole b0000000 (Pothole, Medium) in Kadıköy
 [CostCalculation]      Generated cost estimate c0000000 for pothole b0000000: 1800 TRY
 [WorkOrder]            Created work order WO-2026-000001 for pothole b0000000
 [Notification]         Notification sent for pothole b0000000
@@ -993,7 +993,7 @@ curl http://localhost:5000/api/work-orders
 curl -X POST http://localhost:5000/api/work-orders/{id}/assign \
   -H "Content-Type: application/json" \
   -H "Idempotency-Key: test-assign-001" \
-  -d '{"crewId": "CREW-MERAM-03"}'
+  -d '{"crewId": "CREW-KADIKOY-03"}'
 
 # مواقع العربيات الحية (من Redis)
 curl http://localhost:5000/api/vehicles/live

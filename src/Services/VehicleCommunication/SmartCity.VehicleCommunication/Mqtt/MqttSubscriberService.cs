@@ -130,10 +130,10 @@ public sealed class MqttSubscriberService : BackgroundService
             return;
         }
 
-        // Konya bounding box validation
-        if (lat < 37.6 || lat > 38.2 || lon < 32.2 || lon > 32.8)
+        // Istanbul bounding box validation
+        if (lat < 40.80 || lat > 41.60 || lon < 27.95 || lon > 29.98)
         {
-            _logger.LogWarning("Frame {FrameId} from {VehicleId} outside Konya bounding box: lat={Lat}, lon={Lon}",
+            _logger.LogWarning("Frame {FrameId} from {VehicleId} outside Istanbul bounding box: lat={Lat}, lon={Lon}",
                 frameId, vehicleId, lat, lon);
             return;
         }

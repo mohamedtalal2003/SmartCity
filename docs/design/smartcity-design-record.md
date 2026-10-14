@@ -2,7 +2,7 @@
 
 *A complete record of the architecture: every decision, the reasoning behind it, and the alternatives that were considered and rejected. Written to be used both as a reference while building and as the narrative for a design defense.*
 
-**Project:** AI-powered municipal infrastructure monitoring for Konya, Turkey.
+**Project:** AI-powered municipal infrastructure monitoring for Istanbul, Turkey.
 **Stack:** .NET 8, React, RabbitMQ (MassTransit), gRPC, MQTT (EMQX), PostgreSQL + PostGIS.
 **Status:** Architecture and contract design substantially complete; internal (component-level) design in progress, starting with the Pothole service.
 
@@ -30,7 +30,7 @@ Everything in this document exists to serve that flow. When a decision seemed co
 
 ### Domain context
 
-The system is grounded in Konya. Mock data throughout uses real Konya coordinates, Turkish street names (Ankara Caddesi, Feritpaşa Sokak), the three central districts (Meram, Selçuklu, Karatay), Turkish text for detected banners and work-order descriptions, and TRY currency. This grounding is deliberate — it keeps the design honest about the real use case instead of abstract.
+The system is grounded in Istanbul. Mock data throughout uses real Istanbul coordinates, Turkish street names (Bağdat Caddesi, Barbaros Bulvarı), the three central districts (Kadıköy, Beşiktaş, Fatih), Turkish text for detected banners and work-order descriptions, and TRY currency. This grounding is deliberate — it keeps the design honest about the real use case instead of abstract.
 
 ---
 
@@ -101,7 +101,7 @@ This section went through several revisions in design. The final model is simple
 
 ### Decision: reads are synchronous
 
-When an officer queries data (list potholes in Meram, get one work order), the call is synchronous: Gateway → service (gRPC) → data → back → officer, in one round trip. No events involved.
+When an officer queries data (list potholes in Kadıköy, get one work order), the call is synchronous: Gateway → service (gRPC) → data → back → officer, in one round trip. No events involved.
 
 **Why.** A read is a question, and the user needs the answer before they can act. You cannot return "202 Accepted, come back later" to someone asking to see a list — they have nothing to do with that. gRPC keeps the internal call fast and typed. The service reads its own store and returns.
 
