@@ -1,51 +1,54 @@
 using Grpc.Core;
 using Microsoft.EntityFrameworkCore;
-using NetTopologySuite.Geometries;
-using SmartCity.Pothole.Api.Data;
-using SmartCity.Pothole.Api.Domain;
-using Smartcity.Queries.V1;
+using SmartCity.Pothole.Infrastructure.Persistence;
 using Smartcity.Common.V1;
-using Smartcity.Enums.V1;
+using Smartcity.Queries.V1;
 
 namespace SmartCity.Pothole.Api.Grpc;
 
+using SmartCity.Pothole.Domain.Potholes;
+
+/// <summary>
+/// Read side. Queries <see cref="PotholeDbContext"/> directly with AsNoTracking (no repository for
+/// reads) and maps to the proto messages.
+/// </summary>
 public sealed class RoadDamageQueryGrpcService : RoadDamageQueryService.RoadDamageQueryServiceBase
 {
+    private const int MaxTimelineEntries = 200;
+
     private readonly PotholeDbContext _db;
 
     public RoadDamageQueryGrpcService(PotholeDbContext db) => _db = db;
 
     public override async Task<DamageDetailResponse> GetDamageById(GetDamageRequest request, ServerCallContext context)
     {
-        if (!Guid.TryParse(request.DamageId, out var id))
-            throw new RpcException(new Status(StatusCode.InvalidArgument, "Invalid damage_id"));
+        var id = ParseId(request.DamageId);
 
-        var p = await _db.Potholes.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id, context.CancellationToken);
-        if (p is null)
+        var row = await ToRows(_db.Potholes.AsNoTracking().Where(p => p.Id == id))
+            .FirstOrDefaultAsync(context.CancellationToken);
+        if (row is null)
             throw new RpcException(new Status(StatusCode.NotFound, "Pothole not found"));
 
-        return MapToDetail(p);
+        return ToResponse(row);
     }
 
     public override async Task<ListDamagesResponse> ListDamages(ListDamagesRequest request, ServerCallContext context)
     {
-        var query = _db.Potholes.AsNoTracking().AsQueryable();
+        IQueryable<Pothole> query = _db.Potholes.AsNoTracking();
 
-        if (request.Districts.Count > 0)
-        {
-            var districts = request.Districts
-                .Select(d => (Contracts.Enums.District)(int)d)
-                .ToHashSet();
-            query = query.Where(p => districts.Contains(p.District));
-        }
+        // SKELETON: the districts filter uses the old Konya District enum, so it is ignored until the
+        // contract PR brings district ids.
 
         if (request.MapArea is not null)
         {
             var sw = request.MapArea.SouthWest;
             var ne = request.MapArea.NorthEast;
-            var envelope = new Envelope(sw.Longitude, ne.Longitude, sw.Latitude, ne.Latitude);
-            var box = new GeometryFactory(new PrecisionModel(), 4326).ToGeometry(envelope);
-            query = query.Where(p => p.Location.Intersects(box));
+            query = _db.Potholes
+                .FromSqlInterpolated($"""
+                    SELECT * FROM potholes
+                    WHERE ST_Intersects(location, ST_MakeEnvelope({sw.Longitude}, {sw.Latitude}, {ne.Longitude}, {ne.Latitude}, 4326)::geography)
+                    """)
+                .AsNoTracking();
         }
 
         var pageSize = request.Pagination?.PageSize > 0 ? Math.Min(request.Pagination.PageSize, 100) : 20;
@@ -54,38 +57,103 @@ public sealed class RoadDamageQueryGrpcService : RoadDamageQueryService.RoadDama
         if (!string.IsNullOrEmpty(request.Pagination?.PageToken) && Guid.TryParse(request.Pagination.PageToken, out var cursor))
             query = query.Where(p => p.Id.CompareTo(cursor) > 0);
 
-        var records = await query
-            .OrderBy(p => p.Id)
-            .Take(pageSize)
-            .ToListAsync(context.CancellationToken);
+        var rows = await ToRows(query.OrderBy(p => p.Id).Take(pageSize)).ToListAsync(context.CancellationToken);
 
         var response = new ListDamagesResponse
         {
             Pagination = new PaginationResponse
             {
                 TotalCount = totalCount,
-                NextPageToken = records.Count == pageSize ? records[^1].Id.ToString() : ""
+                NextPageToken = rows.Count == pageSize ? rows[^1].Id.ToString() : ""
             }
         };
-        response.Records.AddRange(records.Select(MapToDetail));
+        response.Records.AddRange(rows.Select(ToResponse));
         return response;
     }
 
-    public override Task<DamageTimelineResponse> GetDamageTimeline(GetDamageRequest request, ServerCallContext context)
+    public override async Task<DamageTimelineResponse> GetDamageTimeline(GetDamageRequest request, ServerCallContext context)
     {
-        throw new RpcException(new Status(StatusCode.Unimplemented, "Not implemented in skeleton"));
+        var id = ParseId(request.DamageId);
+        var ct = context.CancellationToken;
+
+        if (!await _db.Potholes.AnyAsync(p => p.Id == id, ct))
+            throw new RpcException(new Status(StatusCode.NotFound, "Pothole not found"));
+
+        // The first observation is when the pothole was detected; every later one is a re-detection.
+        var firstObservationId = await _db.Observations
+            .Where(o => o.PotholeId == id)
+            .OrderBy(o => o.SeenAt)
+            .Select(o => o.Id)
+            .FirstAsync(ct);
+
+        // SKELETON: the request has no paging yet, so only the newest 200 observations are returned.
+        // Ticket and closing entries come with the contract PR.
+        var observations = await _db.Observations
+            .AsNoTracking()
+            .Where(o => o.PotholeId == id)
+            .OrderByDescending(o => o.SeenAt)
+            .Take(MaxTimelineEntries)
+            .ToListAsync(ct);
+
+        var response = new DamageTimelineResponse { DamageId = id.ToString() };
+        response.Entries.AddRange(observations.Select(o => new TimelineEntry
+        {
+            TimestampUtc = o.SeenAt.ToUnixTimeMilliseconds(),
+            EventType = o.Id == firstObservationId ? "DETECTED" : "RE_DETECTED",
+            Detail = $"{o.DamageType}, severity {o.Severity}, stage {o.Stage}, confidence {o.Confidence:P0}",
+            ImageUrl = o.ImageUrl
+        }));
+        return response;
     }
 
-    private static DamageDetailResponse MapToDetail(PotholeRecord p) => new()
+    private static Guid ParseId(string damageId) =>
+        Guid.TryParse(damageId, out var id)
+            ? id
+            : throw new RpcException(new Status(StatusCode.InvalidArgument, "Invalid damage_id"));
+
+    // The columns the responses need, plus the image of the newest observation.
+    private IQueryable<PotholeRow> ToRows(IQueryable<Pothole> potholes) =>
+        potholes.Select(p => new PotholeRow(
+            p.Id,
+            p.CurrentStage,
+            p.Location,
+            p.RoadName,
+            p.Status,
+            p.WorkOrderId,
+            p.SightingsCount,
+            p.FirstSeenAt,
+            p.LastSeenAt,
+            _db.Observations
+                .Where(o => o.PotholeId == p.Id)
+                .OrderByDescending(o => o.SeenAt)
+                .Select(o => o.ImageUrl)
+                .FirstOrDefault()));
+
+    private static DamageDetailResponse ToResponse(PotholeRow row) => new()
     {
-        DamageId = p.Id.ToString(),
-        Stage = (Smartcity.Enums.V1.DamageStage)(int)p.Stage,
-        District = (Smartcity.Enums.V1.District)(int)p.District,
-        Location = new GeoCoordinates { Latitude = p.Location.Y, Longitude = p.Location.X },
-        RoadName = p.RoadName ?? "",
-        LatestImageUrl = p.ImageUrls.Length > 0 ? p.ImageUrls[^1] : "",
-        DetectionCount = p.DetectionCount,
-        DetectionTimestampUtc = p.FirstSeenAt.ToUnixTimeMilliseconds(),
-        LastSeenTimestampUtc = p.LastSeenAt.ToUnixTimeMilliseconds()
+        DamageId = row.Id.ToString(),
+        Stage = (Smartcity.Enums.V1.DamageStage)(int)row.Stage,
+        // SKELETON: the proto's district is the old Konya enum. Send the district id and name after the contract PR.
+        District = Smartcity.Enums.V1.District.Unspecified,
+        Location = new GeoCoordinates { Latitude = row.Location.Latitude, Longitude = row.Location.Longitude },
+        RoadName = row.RoadName ?? "",
+        LatestImageUrl = row.LatestImageUrl ?? "",
+        // A ticket is active only while the pothole is open.
+        ActiveWorkOrderId = row.Status == PotholeStatus.Open && row.WorkOrderId is not null ? row.WorkOrderId.ToString() : "",
+        DetectionCount = row.SightingsCount,
+        DetectionTimestampUtc = row.FirstSeenAt.ToUnixTimeMilliseconds(),
+        LastSeenTimestampUtc = row.LastSeenAt.ToUnixTimeMilliseconds()
     };
+
+    private sealed record PotholeRow(
+        Guid Id,
+        Contracts.Enums.DamageStage Stage,
+        GeoPoint Location,
+        string? RoadName,
+        PotholeStatus Status,
+        Guid? WorkOrderId,
+        int SightingsCount,
+        DateTimeOffset FirstSeenAt,
+        DateTimeOffset LastSeenAt,
+        string? LatestImageUrl);
 }
