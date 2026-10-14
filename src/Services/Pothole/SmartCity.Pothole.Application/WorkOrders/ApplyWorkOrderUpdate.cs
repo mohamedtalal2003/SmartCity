@@ -33,8 +33,8 @@ public sealed class ApplyWorkOrderUpdate
             return;
         }
 
-        // SKELETON: the contract has no ticket_sequence yet, so the message time orders the updates.
-        // Switch to ticket_sequence after the contract PR.
+        // SKELETON: the events have TicketSequence now, but Work Order still sends 0, so the message time
+        // orders the updates. Switch to TicketSequence once Work Order fills it.
         var sequence = occurredAt.UtcTicks;
 
         pothole.ApplyRepairStatus(workOrderId, status.ToString(), sequence);
