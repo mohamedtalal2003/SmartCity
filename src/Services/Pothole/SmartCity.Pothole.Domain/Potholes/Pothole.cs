@@ -104,8 +104,12 @@ public sealed class Pothole
         if (d.SeenAt > LastSeenAt)
             LastSeenAt = d.SeenAt;
 
+        // The AI never lowers the severity: keep the higher of the old and the new one.
+        // (Only an officer correction may lower it, later.)
+        if (d.Severity > CurrentSeverity)
+            CurrentSeverity = d.Severity;
+
         // The latest reading wins. A size or depth the AI did not measure this time keeps the old value.
-        CurrentSeverity = d.Severity;
         AreaM2 = d.AreaM2 ?? AreaM2;
         DepthCm = d.DepthCm ?? DepthCm;
         Confidence = d.Confidence;

@@ -56,6 +56,21 @@ public class PotholeTests
     }
 
     [Fact]
+    public void Sighting_with_a_lower_severity_keeps_the_higher_one_and_returns_false()
+    {
+        var pothole = TestData.NewPothole(severity: SeverityLevel.High);
+
+        var changed = pothole.AddSighting(TestData.Detection(severity: SeverityLevel.Low), TestData.Prices);
+
+        Assert.False(changed);
+        Assert.Equal(SeverityLevel.High, pothole.CurrentSeverity);
+        Assert.Equal(2500m, pothole.Estimate.Total);
+        Assert.Equal(2, pothole.SightingsCount);
+        // The observation keeps what the AI really saw.
+        Assert.Equal(SeverityLevel.Low, pothole.Observations[^1].Severity);
+    }
+
+    [Fact]
     public void Crack_then_pothole_sighting_becomes_a_pothole_and_returns_true()
     {
         var pothole = TestData.NewPothole(type: DetectionType.RoadCrack);
