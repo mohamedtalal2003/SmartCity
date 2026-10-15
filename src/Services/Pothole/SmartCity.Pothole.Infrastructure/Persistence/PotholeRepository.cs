@@ -53,19 +53,32 @@ public sealed class PotholeRepository : IPotholeRepository
     {
         var location = new Point(point.Longitude, point.Latitude) { SRID = 4326 };
 
-        var districtId = await _db.AdminAreas
+        var district = await _db.AdminAreas
             .Where(a => a.Level == AdminLevel.District && a.Geometry.Intersects(location))
             .OrderBy(a => a.Id)
-            .Select(a => (int?)a.Id)
+            .Select(a => new { a.Id, a.Name })
             .FirstOrDefaultAsync(ct);
 
-        var neighborhoodId = await _db.AdminAreas
+        var neighborhood = await _db.AdminAreas
             .Where(a => a.Level == AdminLevel.Neighborhood && a.Geometry.Intersects(location))
             .OrderBy(a => a.Id)
-            .Select(a => (int?)a.Id)
+            .Select(a => new { a.Id, a.Name })
             .FirstOrDefaultAsync(ct);
 
-        return new AreaMatch(districtId, neighborhoodId);
+        return new AreaMatch(district?.Id, district?.Name, neighborhood?.Id, neighborhood?.Name);
+    }
+
+    public async Task<AreaMatch> GetAreaAsync(int? districtId, int? neighborhoodId, CancellationToken ct)
+    {
+        var districtName = districtId is null
+            ? null
+            : await _db.AdminAreas.Where(a => a.Id == districtId).Select(a => a.Name).FirstOrDefaultAsync(ct);
+
+        var neighborhoodName = neighborhoodId is null
+            ? null
+            : await _db.AdminAreas.Where(a => a.Id == neighborhoodId).Select(a => a.Name).FirstOrDefaultAsync(ct);
+
+        return new AreaMatch(districtId, districtName, neighborhoodId, neighborhoodName);
     }
 
     public Task<Pothole?> GetByIdAsync(Guid id, CancellationToken ct) =>

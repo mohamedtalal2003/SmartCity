@@ -28,7 +28,9 @@ public sealed class WorkOrderCreatedConsumer : IConsumer<WorkOrderCreated>
             Id = Guid.NewGuid(),
             CorrelationId = msg.CorrelationId,
             Title = $"New work order: {msg.TicketNumber}",
-            Body = $"{msg.Title} — Priority: {msg.Priority}, District: {msg.District}",
+            Body = msg.DistrictName is null
+                ? $"{msg.Title} — Priority: {msg.Priority}"
+                : $"{msg.Title} — Priority: {msg.Priority}, District: {msg.DistrictName}",
             RelatedEntityId = msg.WorkOrderId,
             RelatedEntityType = msg.SourceEntityType,
             CreatedAt = DateTimeOffset.UtcNow,

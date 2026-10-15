@@ -26,7 +26,6 @@ public class WorkOrderDbContext : DbContext
             e.HasIndex(w => w.TicketNumber).IsUnique();
             e.Property(w => w.Status).HasConversion<string>();
             e.Property(w => w.Priority).HasConversion<string>();
-            e.Property(w => w.District).HasConversion<string>();
             e.Property(w => w.Category).HasConversion<string>();
             e.Property(w => w.SourceEntityType).HasConversion<string>();
             e.Property(w => w.CurrentPauseReason).HasConversion<string>();

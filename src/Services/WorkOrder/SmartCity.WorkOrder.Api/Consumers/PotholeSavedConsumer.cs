@@ -42,10 +42,11 @@ public sealed class PotholeSavedConsumer : IConsumer<PotholeSaved>
             sourceEntityType: SourceEntityType.RoadDamage,
             correlationId: msg.CorrelationId,
             location: msg.Location,
-            district: msg.District,
+            districtId: msg.DistrictId,
+            districtName: msg.DistrictName,
             category: WorkOrderCategory.RoadRepair,
             priority: priority,
-            title: $"{msg.DetectionType} — {msg.District}",
+            title: msg.DistrictName is null ? $"{msg.DetectionType}" : $"{msg.DetectionType} — {msg.DistrictName}",
             description: $"Severity {msg.Severity}, confidence {msg.Confidence:P0}",
             estimatedCost: pending?.TotalEstimatedCost);
 
@@ -63,11 +64,16 @@ public sealed class PotholeSavedConsumer : IConsumer<PotholeSaved>
                     CorrelationId = msg.CorrelationId,
                     WorkOrderId = created.WorkOrder.Id,
                     TicketNumber = created.WorkOrder.TicketNumber,
+                    // SKELETON: TicketSequence stays 0. The aggregate has no change counter yet; the real
+                    // version adds one (1 at creation, +1 per change) and sends it here.
                     SourceDetectionId = msg.SourceDetectionId,
                     SourceEntityId = msg.PotholeId,
                     SourceEntityType = SourceEntityType.RoadDamage,
                     Location = msg.Location,
-                    District = msg.District,
+                    DistrictId = msg.DistrictId,
+                    DistrictName = msg.DistrictName,
+                    NeighborhoodId = msg.NeighborhoodId,
+                    NeighborhoodName = msg.NeighborhoodName,
                     Category = WorkOrderCategory.RoadRepair,
                     Priority = priority,
                     Status = WorkOrderStatus.Pending,

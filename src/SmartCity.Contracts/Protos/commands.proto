@@ -102,6 +102,38 @@ message RejectResolutionRequest {
   string rejection_reason = 3;
 }
 
+// ─── Pothole ─────────────────────────────────────────────────
+// Officer commands. A pothole's state cannot be changed by hand: it closes
+// when its ticket closes. Merge is deferred.
+service PotholeCommandService {
+  // Add a pothole by hand (P1). entity_id = the pothole id. created = false when
+  // the report was added to an open pothole within 3 m instead of making a new one.
+  rpc AddPothole (AddPotholeRequest) returns (smartcity.common.v1.CommandResponse);
+  // Correct the AI's data (P2). Rejected when the pothole is closed.
+  rpc CorrectPothole (CorrectPotholeRequest) returns (smartcity.common.v1.CommandResponse);
+}
+
+message AddPotholeRequest {
+  smartcity.common.v1.CommandMetadata metadata = 1;
+  smartcity.common.v1.GeoCoordinates location = 2;          // must be inside Istanbul
+  string image_url = 3;                                     // MUST be a blob-storage URL
+  optional smartcity.enums.v1.SeverityLevel severity = 4;   // severity or size is required
+  double area_m2 = 5;                                       // 0 = not given
+  double depth_cm = 6;                                      // 0 = not given
+  smartcity.enums.v1.PotholeSource source = 7;              // OFFICER or CITIZEN_REPORT
+  string notes = 8;                                         // free text
+}
+
+message CorrectPotholeRequest {
+  smartcity.common.v1.CommandMetadata metadata = 1;
+  string pothole_id = 2;
+  optional smartcity.enums.v1.SeverityLevel severity = 3;   // not set = unchanged
+  optional smartcity.enums.v1.DamageStage stage = 4;        // not set = unchanged
+  optional double area_m2 = 5;                              // not set = unchanged
+  optional double depth_cm = 6;                             // not set = unchanged
+  string reason = 7;                                        // required: why the data is corrected
+}
+
 // ─── Urban Inventory ─────────────────────────────────────────
 service UrbanInventoryCommandService {
   rpc UpdateAssetCondition (UpdateAssetConditionRequest) returns (smartcity.common.v1.CommandResponse);

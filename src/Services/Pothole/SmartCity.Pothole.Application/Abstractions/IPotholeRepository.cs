@@ -20,6 +20,9 @@ public interface IPotholeRepository
     /// <summary>The district and neighborhood that contain the point.</summary>
     Task<AreaMatch> FindAreaAsync(GeoPoint point, CancellationToken ct);
 
+    /// <summary>The names of a pothole's district and neighborhood, for the events.</summary>
+    Task<AreaMatch> GetAreaAsync(int? districtId, int? neighborhoodId, CancellationToken ct);
+
     Task<Pothole?> GetByIdAsync(Guid id, CancellationToken ct);
 
     void Add(Pothole pothole);
