@@ -29,6 +29,7 @@ builder.Services.AddGrpc();
 var app = builder.Build();
 app.MapSmartCityHealthChecks();
 app.MapGrpcService<RoadDamageQueryGrpcService>();
+app.MapGrpcService<AreaQueryGrpcService>();
 
 using (var scope = app.Services.CreateScope())
 {
