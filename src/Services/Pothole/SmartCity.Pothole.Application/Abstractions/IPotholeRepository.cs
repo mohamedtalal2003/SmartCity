@@ -13,6 +13,9 @@ public interface IPotholeRepository
     /// <summary>True when an observation for this AI detection was already saved.</summary>
     Task<bool> ObservationExistsAsync(Guid detectionId, CancellationToken ct);
 
+    /// <summary>True when a verification pass for this frame was already saved on this pothole.</summary>
+    Task<bool> VerificationExistsAsync(Guid potholeId, Guid frameId, CancellationToken ct);
+
     /// <summary>The nearest Open pothole within <paramref name="radiusM"/> meters, or null.</summary>
     Task<Pothole?> FindNearestOpenAsync(GeoPoint point, double radiusM, CancellationToken ct);
 

@@ -222,6 +222,10 @@ namespace SmartCity.Pothole.Infrastructure.Persistence.Migrations
                         .HasColumnType("double precision")
                         .HasColumnName("depth_cm");
 
+                    b.Property<Guid?>("FrameId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("frame_id");
+
                     b.Property<string>("ImageUrl")
                         .HasMaxLength(1000)
                         .HasColumnType("character varying(1000)")
@@ -270,6 +274,10 @@ namespace SmartCity.Pothole.Infrastructure.Persistence.Migrations
 
                     b.HasIndex(new[] { "PotholeId", "SeenAt" }, "ix_observations_pothole_seen_at")
                         .IsDescending(false, true);
+
+                    b.HasIndex(new[] { "PotholeId", "FrameId" }, "ux_observations_pothole_frame_id")
+                        .IsUnique()
+                        .HasFilter("frame_id IS NOT NULL");
 
                     b.HasIndex(new[] { "SourceDetectionId" }, "ux_observations_source_detection_id")
                         .IsUnique()

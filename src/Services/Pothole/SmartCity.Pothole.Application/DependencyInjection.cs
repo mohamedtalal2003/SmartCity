@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using SmartCity.Pothole.Application.Commands;
 using SmartCity.Pothole.Application.Detections;
 using SmartCity.Pothole.Application.Officers;
+using SmartCity.Pothole.Application.Verifications;
 using SmartCity.Pothole.Application.WorkOrders;
 using SmartCity.Pothole.Domain.Estimation;
 
@@ -34,6 +35,7 @@ public static class DependencyInjection
         services.AddScoped<HandleDetection>();
         services.AddScoped<ApplyWorkOrderUpdate>();
         services.AddScoped<DismissDetection>();
+        services.AddScoped<RecordVerificationPass>();
         services.AddScoped<AddPotholeByOfficer>();
         services.AddScoped<CorrectPothole>();
 

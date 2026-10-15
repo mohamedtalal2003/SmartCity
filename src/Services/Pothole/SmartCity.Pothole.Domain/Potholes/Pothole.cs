@@ -222,6 +222,20 @@ public sealed class Pothole
         RowVersion++;
     }
 
+    /// <summary>
+    /// Save a verification photo (P10). Allowed while Open and after closing as Repaired: a late photo is
+    /// still the "after" photo. Ignored on a pothole closed for any other reason. Never changes the status;
+    /// deciding that the repair is done is Work Order's job.
+    /// </summary>
+    public void AddVerificationPass(VerificationPass v)
+    {
+        if (Status == PotholeStatus.Closed && ClosedReason != Potholes.ClosedReason.Repaired)
+            return;
+
+        _observations.Add(Observation.FromVerificationPass(this, v));
+        RowVersion++;
+    }
+
     /// <summary>Copy the ticket status for display. Older messages and messages after closing are ignored.</summary>
     public void ApplyRepairStatus(Guid workOrderId, string status, long sequence)
     {

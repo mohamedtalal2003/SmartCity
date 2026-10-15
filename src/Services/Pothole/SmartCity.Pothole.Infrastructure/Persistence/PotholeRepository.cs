@@ -17,6 +17,9 @@ public sealed class PotholeRepository : IPotholeRepository
     public Task<bool> ObservationExistsAsync(Guid detectionId, CancellationToken ct) =>
         _db.Observations.AnyAsync(o => o.SourceDetectionId == detectionId, ct);
 
+    public Task<bool> VerificationExistsAsync(Guid potholeId, Guid frameId, CancellationToken ct) =>
+        _db.Observations.AnyAsync(o => o.PotholeId == potholeId && o.FrameId == frameId, ct);
+
     public async Task<Pothole?> FindNearestOpenAsync(GeoPoint point, double radiusM, CancellationToken ct)
     {
         // PostGIS on geography measures in meters. Uses the partial GIST index on open potholes.

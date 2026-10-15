@@ -20,7 +20,8 @@ public sealed class Observation
     public double? AreaM2 { get; private set; }
     public double? DepthCm { get; private set; }
     public double? Confidence { get; private set; }
-    public string? VerificationResult { get; private set; } // only for VerificationPass (later)
+    public string? VerificationResult { get; private set; } // only for VerificationPass: Gone, StillThere, NotVisible
+    public Guid? FrameId { get; private set; }              // only for VerificationPass: the checked frame
     public string? ImageUrl { get; private set; }         // null for a correction (no photo)
     public string? Notes { get; private set; }
     public DateTimeOffset SeenAt { get; private set; }
@@ -57,6 +58,25 @@ public sealed class Observation
         Notes = r.Notes,
         SeenAt = r.At,
         CreatedBy = r.CreatedBy
+    };
+
+    /// <summary>A verification photo. The pothole's own values are copied so the timeline row is complete.</summary>
+    internal static Observation FromVerificationPass(Pothole p, VerificationPass v) => new()
+    {
+        Id = Guid.NewGuid(),
+        PotholeId = p.Id,
+        Kind = ObservationKind.VerificationPass,
+        DamageType = p.DamageType,
+        Severity = p.CurrentSeverity,
+        Stage = p.CurrentStage,
+        AreaM2 = p.AreaM2,
+        DepthCm = p.DepthCm,
+        Confidence = v.Confidence,
+        VerificationResult = v.Result.ToString(),
+        FrameId = v.FrameId,
+        ImageUrl = v.ImageUrl,
+        SeenAt = v.ObservedAt,
+        CreatedBy = "ai"
     };
 
     /// <summary>The values after the correction, with the reason in <see cref="Notes"/>.</summary>
