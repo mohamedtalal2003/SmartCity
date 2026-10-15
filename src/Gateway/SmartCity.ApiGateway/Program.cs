@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Grpc.Core;
@@ -23,6 +24,8 @@ builder.Services.AddSwaggerGen();
 var grpcSection = builder.Configuration.GetSection("GrpcServices");
 
 RegisterGrpcClient<RoadDamageQueryService.RoadDamageQueryServiceClient>(builder, grpcSection["Pothole"]!);
+RegisterGrpcClient<PotholeCommandService.PotholeCommandServiceClient>(builder, grpcSection["Pothole"]!);
+RegisterGrpcClient<AreaQueryService.AreaQueryServiceClient>(builder, grpcSection["Pothole"]!);
 RegisterGrpcClient<CostQueryService.CostQueryServiceClient>(builder, grpcSection["CostCalculation"]!);
 RegisterGrpcClient<WorkOrderQueryService.WorkOrderQueryServiceClient>(builder, grpcSection["WorkOrder"]!);
 RegisterGrpcClient<WorkOrderCommandService.WorkOrderCommandServiceClient>(builder, grpcSection["WorkOrder"]!);
@@ -220,27 +223,21 @@ app.MapGet("/api/potholes/{id}", async (string id, RoadDamageQueryService.RoadDa
     });
 });
 
-app.MapGet("/api/potholes", async ([FromQuery] string? bbox, RoadDamageQueryService.RoadDamageQueryServiceClient client) =>
+// GET /api/potholes?district=13&minSeverity=High&sort=mostSevere&page=<nextPage>&pageSize=20
+// Filter names as on the Pothole design page (P12). A list filter takes several values:
+// district=13&district=14 or district=13,14.
+app.MapGet("/api/potholes", async (HttpRequest http, RoadDamageQueryService.RoadDamageQueryServiceClient client) =>
 {
     return await CallGrpc(async () =>
     {
-        var request = new ListDamagesRequest();
-        if (!string.IsNullOrEmpty(bbox))
+        var request = BuildDamageFilters(http.Query);
+        request.Pagination = new PaginationRequest
         {
-            var parts = bbox.Split(',');
-            if (parts.Length == 4 &&
-                double.TryParse(parts[0], out var minLon) &&
-                double.TryParse(parts[1], out var minLat) &&
-                double.TryParse(parts[2], out var maxLon) &&
-                double.TryParse(parts[3], out var maxLat))
-            {
-                request.MapArea = new BoundingBox
-                {
-                    SouthWest = new GeoCoordinates { Latitude = minLat, Longitude = minLon },
-                    NorthEast = new GeoCoordinates { Latitude = maxLat, Longitude = maxLon }
-                };
-            }
-        }
+            PageSize = int.TryParse(http.Query["pageSize"], out var pageSize) ? pageSize : 20,
+            PageToken = http.Query["page"].ToString()
+        };
+        if (Enum.TryParse<Smartcity.Enums.V1.DamageSort>(http.Query["sort"], true, out var sort))
+            request.Sort = sort;
 
         var response = await client.ListDamagesAsync(request);
 
@@ -260,14 +257,161 @@ app.MapGet("/api/potholes", async ([FromQuery] string? bbox, RoadDamageQueryServ
                 roadName = r.RoadName,
                 latestImageUrl = r.LatestImageUrl,
                 detectionCount = r.DetectionCount,
+                districtId = r.DistrictId,
+                neighborhoodId = r.NeighborhoodId,
+                neighborhood = r.NeighborhoodName,
+                status = r.Status.ToString(),
+                closedReason = r.ClosedReason.ToString(),
+                closedAtUtc = r.ClosedAtUtc,
+                duplicateOfId = r.DuplicateOfId,
+                severity = r.Severity.ToString(),
+                damageType = r.DamageType.ToString(),
+                areaM2 = r.AreaM2,
+                depthCm = r.DepthCm,
+                confidence = r.Confidence,
+                source = r.Source.ToString(),
+                estimatedTotal = r.EstimatedTotal,
+                estimatedMaterials = r.EstimatedMaterials,
+                estimatedLabor = r.EstimatedLabor,
+                estimatedEquipment = r.EstimatedEquipment,
+                currency = r.Currency,
+                workOrderId = r.WorkOrderId,
+                activeWorkOrderId = r.ActiveWorkOrderId,
+                repairStatus = r.RepairStatus,
+                firstSeenUtc = r.DetectionTimestampUtc,
+                lastSeenUtc = r.LastSeenTimestampUtc,
             }
         });
 
         return Results.Json(new
         {
             type = "FeatureCollection",
-            features
+            features,
+            totalCount = response.Pagination.TotalCount,
+            nextPage = response.Pagination.NextPageToken,
         }, jsonOptions);
+    });
+});
+
+// GET /api/potholes/map?bbox=minLon,minLat,maxLon,maxLat&zoom=12 (+ the list filters)
+app.MapGet("/api/potholes/map", async (HttpRequest http, RoadDamageQueryService.RoadDamageQueryServiceClient client) =>
+{
+    return await CallGrpc(async () =>
+    {
+        var filters = BuildDamageFilters(http.Query);
+        var response = await client.GetDamagesOnMapAsync(new DamagesOnMapRequest
+        {
+            MapArea = filters.MapArea,
+            Zoom = int.TryParse(http.Query["zoom"], out var zoom) ? zoom : 12,
+            Filters = filters,
+        });
+        return Results.Json(response, jsonOptions);
+    });
+});
+
+app.MapGet("/api/potholes/{id}/timeline", async (
+    string id,
+    [FromQuery] string? page,
+    [FromQuery] int? pageSize,
+    RoadDamageQueryService.RoadDamageQueryServiceClient client) =>
+{
+    return await CallGrpc(async () =>
+    {
+        var response = await client.GetDamageTimelineAsync(new GetDamageTimelineRequest
+        {
+            DamageId = id,
+            Pagination = new PaginationRequest { PageSize = pageSize ?? 20, PageToken = page ?? "" },
+        });
+        return Results.Json(response, jsonOptions);
+    });
+});
+
+// ─── Potholes (commands) ──────────────────────────────────────
+// 201 when a new pothole was made, 200 when the report was added to an open pothole within 3 m.
+app.MapPost("/api/potholes", async (HttpContext ctx, PotholeCommandService.PotholeCommandServiceClient client) =>
+{
+    if (!TryGetIdempotencyKey(ctx, out var key))
+        return Results.BadRequest(new { error = "Missing Idempotency-Key header" });
+
+    return await CallGrpcCommand(async () =>
+    {
+        var body = await ctx.Request.ReadFromJsonAsync<AddPotholeBody>(jsonOptions);
+        if (body is null)
+            return Results.BadRequest(new { error = "Missing body" });
+
+        var request = new AddPotholeRequest
+        {
+            Location = new GeoCoordinates { Latitude = body.Latitude, Longitude = body.Longitude },
+            ImageUrl = body.ImageUrl ?? "",
+            AreaM2 = body.AreaM2 ?? 0,
+            DepthCm = body.DepthCm ?? 0,
+            Source = Enum.TryParse<Smartcity.Enums.V1.PotholeSource>(body.Source, true, out var source)
+                ? source : Smartcity.Enums.V1.PotholeSource.Officer,
+            Notes = body.Notes ?? "",
+            Metadata = BuildMetadata(ctx, key),
+        };
+        if (!string.IsNullOrEmpty(body.Severity))
+        {
+            if (!Enum.TryParse<Smartcity.Enums.V1.SeverityLevel>(body.Severity, true, out var severity))
+                return Results.BadRequest(new { error = $"Unknown severity '{body.Severity}'" });
+            request.Severity = severity;
+        }
+
+        var response = await client.AddPotholeAsync(request);
+        return MapPotholeCommandResponse(response);
+    });
+});
+
+app.MapPost("/api/potholes/{id}/corrections", async (string id, HttpContext ctx,
+    PotholeCommandService.PotholeCommandServiceClient client) =>
+{
+    if (!TryGetIdempotencyKey(ctx, out var key))
+        return Results.BadRequest(new { error = "Missing Idempotency-Key header" });
+
+    return await CallGrpcCommand(async () =>
+    {
+        var body = await ctx.Request.ReadFromJsonAsync<CorrectionBody>(jsonOptions);
+        if (body is null)
+            return Results.BadRequest(new { error = "Missing body" });
+
+        var request = new CorrectPotholeRequest
+        {
+            PotholeId = id,
+            Reason = body.Reason ?? "",
+            Metadata = BuildMetadata(ctx, key),
+        };
+        if (!string.IsNullOrEmpty(body.Severity))
+        {
+            if (!Enum.TryParse<Smartcity.Enums.V1.SeverityLevel>(body.Severity, true, out var severity))
+                return Results.BadRequest(new { error = $"Unknown severity '{body.Severity}'" });
+            request.Severity = severity;
+        }
+        if (!string.IsNullOrEmpty(body.Stage))
+        {
+            if (!Enum.TryParse<Smartcity.Enums.V1.DamageStage>(body.Stage, true, out var stage))
+                return Results.BadRequest(new { error = $"Unknown stage '{body.Stage}'" });
+            request.Stage = stage;
+        }
+        if (body.AreaM2 is not null) request.AreaM2 = body.AreaM2.Value;
+        if (body.DepthCm is not null) request.DepthCm = body.DepthCm.Value;
+
+        var response = await client.CorrectPotholeAsync(request);
+        return MapPotholeCommandResponse(response);
+    });
+});
+
+// ─── Areas (Istanbul districts and neighborhoods) ─────────────
+// GET /api/areas = the districts; GET /api/areas?parentId=13 = the neighborhoods of district 13.
+app.MapGet("/api/areas", async ([FromQuery] int? parentId, AreaQueryService.AreaQueryServiceClient client) =>
+{
+    return await CallGrpc(async () =>
+    {
+        var request = new ListAreasRequest();
+        if (parentId is not null)
+            request.ParentId = parentId.Value;
+
+        var response = await client.ListAreasAsync(request);
+        return Results.Json(response.Areas, jsonOptions);
     });
 });
 
@@ -385,6 +529,97 @@ static IResult MapCommandResponse(CommandResponse response)
     };
 }
 
+// Only the pothole command routes look at `created`; Work Order keeps MapCommandResponse as it is.
+static IResult MapPotholeCommandResponse(CommandResponse response)
+{
+    if (response.Success && response.Created)
+        return Results.Created($"/api/potholes/{response.EntityId}", response);
+    return MapCommandResponse(response);
+}
+
+// The pothole list and map filters from the query string (names from the Pothole design page, P12).
+static ListDamagesRequest BuildDamageFilters(IQueryCollection query)
+{
+    var request = new ListDamagesRequest();
+
+    // Place
+    request.DistrictIds.AddRange(QueryInts(query, "district"));
+    request.NeighborhoodIds.AddRange(QueryInts(query, "neighborhood"));
+    request.RoadName = query["road"].ToString();
+    var bbox = query["bbox"].ToString().Split(',');
+    if (bbox.Length == 4 &&
+        double.TryParse(bbox[0], NumberStyles.Float, CultureInfo.InvariantCulture, out var minLon) &&
+        double.TryParse(bbox[1], NumberStyles.Float, CultureInfo.InvariantCulture, out var minLat) &&
+        double.TryParse(bbox[2], NumberStyles.Float, CultureInfo.InvariantCulture, out var maxLon) &&
+        double.TryParse(bbox[3], NumberStyles.Float, CultureInfo.InvariantCulture, out var maxLat))
+    {
+        request.MapArea = new BoundingBox
+        {
+            SouthWest = new GeoCoordinates { Latitude = minLat, Longitude = minLon },
+            NorthEast = new GeoCoordinates { Latitude = maxLat, Longitude = maxLon }
+        };
+    }
+
+    // State
+    request.Statuses.AddRange(QueryEnums<Smartcity.Enums.V1.PotholeStatus>(query, "status"));
+    request.ClosedReasons.AddRange(QueryEnums<Smartcity.Enums.V1.ClosedReason>(query, "closedReason"));
+    request.RepairStatuses.AddRange(QueryList(query, "repairStatus"));
+    // SKELETON: the proto only has "without an active work order", so hasOpenWorkOrder=true is not applied.
+    if (bool.TryParse(query["hasOpenWorkOrder"], out var hasOpenWorkOrder) && !hasOpenWorkOrder)
+        request.WithoutActiveWorkOrder = true;
+
+    // The pothole
+    request.Stages.AddRange(QueryEnums<Smartcity.Enums.V1.DamageStage>(query, "stage"));
+    if (Enum.TryParse<Smartcity.Enums.V1.DamageStage>(query["minStage"], true, out var minStage))
+        request.MinStage = minStage;
+    if (Enum.TryParse<Smartcity.Enums.V1.SeverityLevel>(query["minSeverity"], true, out var minSeverity))
+        request.MinSeverity = minSeverity;
+    request.MinAreaM2 = QueryDouble(query, "minArea");
+    request.MaxAreaM2 = QueryDouble(query, "maxArea");
+    request.MinDepthCm = QueryDouble(query, "minDepth");
+    request.MaxDepthCm = QueryDouble(query, "maxDepth");
+    request.MinConfidence = QueryDouble(query, "minConfidence");
+
+    // Money and source
+    request.MinCost = QueryDouble(query, "minCost");
+    request.MaxCost = QueryDouble(query, "maxCost");
+    request.Sources.AddRange(QueryEnums<Smartcity.Enums.V1.PotholeSource>(query, "source"));
+    request.MinSightings = int.TryParse(query["minSightings"], out var minSightings) ? minSightings : 0;
+
+    // Time (ISO dates, UTC when no offset is given)
+    request.TimeRange = QueryTimeRange(query, "firstSeenFrom", "firstSeenTo");
+    request.LastSeen = QueryTimeRange(query, "lastSeenFrom", "lastSeenTo");
+    request.Closed = QueryTimeRange(query, "closedFrom", "closedTo");
+
+    return request;
+}
+
+// "a,b" and "x=a&x=b" both give [a, b].
+static IEnumerable<string> QueryList(IQueryCollection query, string name) =>
+    query[name].SelectMany(v => (v ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
+
+static IEnumerable<int> QueryInts(IQueryCollection query, string name) =>
+    QueryList(query, name).Select(v => int.TryParse(v, out var x) ? x : 0).Where(x => x > 0);
+
+static IEnumerable<TEnum> QueryEnums<TEnum>(IQueryCollection query, string name) where TEnum : struct, Enum =>
+    QueryList(query, name)
+        .Select(v => Enum.TryParse<TEnum>(v, true, out var e) ? e : default)
+        .Where(e => !e.Equals(default(TEnum)));
+
+static double QueryDouble(IQueryCollection query, string name) =>
+    double.TryParse(query[name], NumberStyles.Float, CultureInfo.InvariantCulture, out var value) ? value : 0;
+
+static TimeRange? QueryTimeRange(IQueryCollection query, string fromName, string toName)
+{
+    var from = QueryEpochMs(query, fromName);
+    var to = QueryEpochMs(query, toName);
+    return from == 0 && to == 0 ? null : new TimeRange { FromUtc = from, ToUtc = to };
+}
+
+static long QueryEpochMs(IQueryCollection query, string name) =>
+    DateTimeOffset.TryParse(query[name], CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out var at)
+        ? at.ToUnixTimeMilliseconds() : 0;
+
 static async Task<IResult> CallGrpc(Func<Task<IResult>> call)
 {
     try
@@ -449,3 +684,6 @@ static async Task<IResult> CallGrpcCommand(Func<Task<IResult>> call)
 record AssignCrewBody(string CrewId);
 record PauseBody(string Reason);
 record CompleteBody(string ProofImageUrl);
+record AddPotholeBody(double Latitude, double Longitude, string? ImageUrl, string? Severity, double? AreaM2,
+    double? DepthCm, string? Source, string? Notes);
+record CorrectionBody(string? Severity, string? Stage, double? AreaM2, double? DepthCm, string? Reason);
