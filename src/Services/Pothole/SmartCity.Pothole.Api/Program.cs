@@ -27,6 +27,7 @@ builder.AddSmartCityBus(ServiceName, x =>
 
 builder.AddSmartCityHealthChecks();
 builder.Services.AddGrpc();
+builder.Services.Configure<MapOptions>(builder.Configuration.GetSection(MapOptions.SectionName));
 
 var app = builder.Build();
 app.MapSmartCityHealthChecks();
