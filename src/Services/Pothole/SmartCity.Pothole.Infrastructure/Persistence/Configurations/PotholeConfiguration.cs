@@ -59,8 +59,8 @@ public sealed class PotholeConfiguration : IEntityTypeConfiguration<Pothole>
             e.Property(c => c.Total).HasColumnName("est_total").HasPrecision(12, 2);
             e.Property(c => c.Currency).HasColumnName("est_currency").HasMaxLength(3).IsFixedLength();
 
-            // SKELETON: only the money is stored. Hours, crew size, priority and material are not stored
-            // yet; they go out in PotholeSaved after the contract PR.
+            // Only the money is stored (the list filters on est_total). Hours, crew size, priority and
+            // material are computed fresh by PotholeEstimator whenever PotholeSaved is built.
             e.Ignore(c => c.LaborHours);
             e.Ignore(c => c.CrewSize);
             e.Ignore(c => c.SuggestedPriority);

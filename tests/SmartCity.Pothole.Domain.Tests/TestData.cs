@@ -39,6 +39,29 @@ internal static class TestData
             ImageUrl: "http://localhost:9000/frames-temp/MUN-VEH-001/frame.jpg",
             SeenAt: seenAt ?? new DateTimeOffset(2026, 10, 14, 8, 0, 0, TimeSpan.Zero));
 
+    public static OfficerReport OfficerReport(
+        SeverityLevel severity = SeverityLevel.High,
+        PotholeSource source = PotholeSource.Officer) =>
+        new(
+            Location: Kadikoy,
+            ImageUrl: "http://localhost:9000/frames-temp/MUN-VEH-001/officer.jpg",
+            Severity: severity,
+            AreaM2: 0.4,
+            DepthCm: 8,
+            Source: source,
+            Notes: "Reported by phone",
+            CreatedBy: "officer-7",
+            At: new DateTimeOffset(2026, 10, 14, 9, 0, 0, TimeSpan.Zero));
+
+    public static Correction Correction(
+        SeverityLevel? severity = null,
+        DamageStage? stage = null,
+        double? areaM2 = null,
+        double? depthCm = null,
+        string reason = "Checked on site") =>
+        new(severity, stage, areaM2, depthCm, reason, CreatedBy: "officer-7",
+            At: new DateTimeOffset(2026, 10, 14, 10, 0, 0, TimeSpan.Zero));
+
     public static Pothole NewPothole(
         DetectionType type = DetectionType.Pothole,
         SeverityLevel severity = SeverityLevel.Medium) =>

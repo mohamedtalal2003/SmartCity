@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using NetTopologySuite.Geometries;
 using SmartCity.Pothole.Application.Abstractions;
+using SmartCity.Pothole.Application.Commands;
 
 namespace SmartCity.Pothole.Infrastructure.Persistence;
 
@@ -15,6 +16,9 @@ public sealed class PotholeRepository : IPotholeRepository
 
     public Task<bool> ObservationExistsAsync(Guid detectionId, CancellationToken ct) =>
         _db.Observations.AnyAsync(o => o.SourceDetectionId == detectionId, ct);
+
+    public Task<bool> VerificationExistsAsync(Guid potholeId, Guid frameId, CancellationToken ct) =>
+        _db.Observations.AnyAsync(o => o.PotholeId == potholeId && o.FrameId == frameId, ct);
 
     public async Task<Pothole?> FindNearestOpenAsync(GeoPoint point, double radiusM, CancellationToken ct)
     {
@@ -85,6 +89,35 @@ public sealed class PotholeRepository : IPotholeRepository
         _db.Potholes.FirstOrDefaultAsync(p => p.Id == id, ct);
 
     public void Add(Pothole pothole) => _db.Potholes.Add(pothole);
+
+    public async Task<CommandResult?> FindCommandResultAsync(string idempotencyKey, CancellationToken ct)
+    {
+        if (string.IsNullOrEmpty(idempotencyKey))
+            return null;
+
+        var row = await _db.ProcessedIdempotencyKeys.AsNoTracking().FirstOrDefaultAsync(k => k.Key == idempotencyKey, ct);
+        return row is null
+            ? null
+            : new CommandResult(row.Success, Enum.Parse<CommandError>(row.ErrorCode), row.Message, row.EntityId, row.Created, row.ProcessedAt);
+    }
+
+    public void RememberCommandResult(string idempotencyKey, CommandResult result)
+    {
+        // Like Work Order: no key, nothing to remember; only successful results are kept.
+        if (string.IsNullOrEmpty(idempotencyKey) || !result.Success)
+            return;
+
+        _db.ProcessedIdempotencyKeys.Add(new ProcessedIdempotencyKey
+        {
+            Key = idempotencyKey,
+            Success = result.Success,
+            ErrorCode = result.Error.ToString(),
+            Message = result.Message,
+            EntityId = result.EntityId,
+            Created = result.Created,
+            ProcessedAt = result.ProcessedAt
+        });
+    }
 
     public Task SaveChangesAsync(CancellationToken ct) => _db.SaveChangesAsync(ct);
 }

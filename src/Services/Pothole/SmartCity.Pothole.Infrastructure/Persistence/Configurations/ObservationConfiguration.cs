@@ -25,6 +25,7 @@ public sealed class ObservationConfiguration : IEntityTypeConfiguration<Observat
         o.Property(x => x.DepthCm).HasColumnName("depth_cm");
         o.Property(x => x.Confidence).HasColumnName("confidence");
         o.Property(x => x.VerificationResult).HasColumnName("verification_result").HasMaxLength(20);
+        o.Property(x => x.FrameId).HasColumnName("frame_id");
         o.Property(x => x.ImageUrl).HasColumnName("image_url").HasMaxLength(1000);
         o.Property(x => x.Notes).HasColumnName("notes");
         o.Property(x => x.SeenAt).HasColumnName("seen_at");
@@ -34,6 +35,10 @@ public sealed class ObservationConfiguration : IEntityTypeConfiguration<Observat
         o.HasIndex(x => x.SourceDetectionId, "ux_observations_source_detection_id")
             .IsUnique()
             .HasFilter("source_detection_id IS NOT NULL");
+        // The same verification frame is saved once per pothole.
+        o.HasIndex(x => new { x.PotholeId, x.FrameId }, "ux_observations_pothole_frame_id")
+            .IsUnique()
+            .HasFilter("frame_id IS NOT NULL");
         // The pothole history, newest first.
         o.HasIndex(x => new { x.PotholeId, x.SeenAt }, "ix_observations_pothole_seen_at")
             .IsDescending(false, true);

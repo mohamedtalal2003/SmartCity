@@ -1,3 +1,5 @@
+using SmartCity.Pothole.Application.Commands;
+
 namespace SmartCity.Pothole.Application.Abstractions;
 
 using SmartCity.Pothole.Domain.Potholes;
@@ -10,6 +12,9 @@ public interface IPotholeRepository
 {
     /// <summary>True when an observation for this AI detection was already saved.</summary>
     Task<bool> ObservationExistsAsync(Guid detectionId, CancellationToken ct);
+
+    /// <summary>True when a verification pass for this frame was already saved on this pothole.</summary>
+    Task<bool> VerificationExistsAsync(Guid potholeId, Guid frameId, CancellationToken ct);
 
     /// <summary>The nearest Open pothole within <paramref name="radiusM"/> meters, or null.</summary>
     Task<Pothole?> FindNearestOpenAsync(GeoPoint point, double radiusM, CancellationToken ct);
@@ -26,6 +31,12 @@ public interface IPotholeRepository
     Task<Pothole?> GetByIdAsync(Guid id, CancellationToken ct);
 
     void Add(Pothole pothole);
+
+    /// <summary>The result of an earlier command with this idempotency key, or null.</summary>
+    Task<CommandResult?> FindCommandResultAsync(string idempotencyKey, CancellationToken ct);
+
+    /// <summary>Keeps a successful command result with its key. Saved by the same <see cref="SaveChangesAsync"/>.</summary>
+    void RememberCommandResult(string idempotencyKey, CommandResult result);
 
     /// <summary>Saves everything in one transaction, together with the events in the outbox.</summary>
     Task SaveChangesAsync(CancellationToken ct);

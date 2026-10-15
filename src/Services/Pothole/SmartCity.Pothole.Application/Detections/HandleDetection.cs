@@ -1,12 +1,11 @@
 using System.Globalization;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using SmartCity.Contracts.Common;
 using SmartCity.Contracts.Enums;
-using SmartCity.Contracts.Events.Business;
 using SmartCity.Contracts.Events.Detection;
 using SmartCity.Contracts.Events.Ingestion;
 using SmartCity.Pothole.Application.Abstractions;
+using SmartCity.Pothole.Application.Potholes;
 using SmartCity.Pothole.Domain.Estimation;
 
 namespace SmartCity.Pothole.Application.Detections;
@@ -137,79 +136,17 @@ public sealed class HandleDetection
     {
         // SKELETON: with no depth from the AI the severity is Medium (as in the old stub). The real AI
         // will always send its measurements.
-        if (depthCm is null)
-            return SeverityLevel.Medium;
-
-        if (depthCm < _options.LowBelowCm) return SeverityLevel.Low;
-        if (depthCm < _options.MediumBelowCm) return SeverityLevel.Medium;
-        if (depthCm < _options.HighBelowCm) return SeverityLevel.High;
-        return SeverityLevel.Critical;
+        return depthCm is null ? SeverityLevel.Medium : _options.SeverityFromDepth(depthCm.Value);
     }
 
-    private static PotholeSaved ToPotholeSaved(Pothole pothole, AreaMatch area, RawDetectionReceived message, bool isNewPothole) => new()
-    {
-        // Invariant 5: copy CorrelationId unchanged and set SourceDetectionId, so the trace works.
-        CorrelationId = message.CorrelationId,
-        SourceDetectionId = message.DetectionId,
-        PotholeId = pothole.Id,
-        IsNewPothole = isNewPothole,
-        Reason = isNewPothole ? PotholeSavedReason.New : PotholeSavedReason.Changed,
-        DetectionCount = pothole.SightingsCount,
-        RowVersion = pothole.RowVersion,
-        FirstSeenAt = pothole.FirstSeenAt,
-        LastSeenAt = pothole.LastSeenAt,
-        Location = new GeoLocation { Latitude = pothole.Location.Latitude, Longitude = pothole.Location.Longitude },
-        DistrictId = area.DistrictId,
-        DistrictName = area.DistrictName,
-        NeighborhoodId = area.NeighborhoodId,
-        NeighborhoodName = area.NeighborhoodName,
-        RoadName = pothole.RoadName,
-        DetectionType = pothole.DamageType,
-        Stage = pothole.CurrentStage,
-        Severity = pothole.CurrentSeverity,
-        EstimatedSize = pothole.AreaM2 is null && pothole.DepthCm is null
-            ? null
-            : new Dimensions { AreaSquareMeters = pothole.AreaM2, DepthMeters = pothole.DepthCm / 100 },
-        Confidence = pothole.Confidence,
-        Source = ToContractSource(pothole.Source),
-        Estimate = ToEstimateInfo(pothole.Estimate),
-        ImageUrls = new List<string> { message.ImageUrl }
-    };
-
-    // Pothole's own enum and the contract enum have the same names, so map them one by one.
-    private static Contracts.Enums.PotholeSource ToContractSource(PotholeSource source) => source switch
-    {
-        PotholeSource.Ai => Contracts.Enums.PotholeSource.Ai,
-        PotholeSource.Officer => Contracts.Enums.PotholeSource.Officer,
-        PotholeSource.CitizenReport => Contracts.Enums.PotholeSource.CitizenReport,
-        _ => Contracts.Enums.PotholeSource.Unspecified
-    };
-
-    private static CostEstimateInfo ToEstimateInfo(CostEstimate estimate) => new()
-    {
-        Materials = estimate.Materials,
-        Labor = estimate.Labor,
-        Equipment = estimate.Equipment,
-        Total = estimate.Total,
-        Currency = estimate.Currency,
-        // SKELETON: only the money is stored on the pothole. Hours, crew, priority and material are known
-        // when the estimate was computed in this call (new pothole, or severity/stage changed); a pothole
-        // whose only change is its damage type sends them empty. A later PR stores or recomputes them.
-        LaborHours = estimate.LaborHours,
-        CrewSize = estimate.CrewSize,
-        SuggestedPriority = estimate.SuggestedPriority,
-        MaterialItems = estimate.Material is null
-            ? new List<MaterialItem>()
-            : new List<MaterialItem>
-            {
-                new()
-                {
-                    Name = estimate.Material.Name,
-                    Quantity = estimate.Material.Quantity,
-                    Unit = estimate.Material.Unit,
-                    UnitCost = estimate.Material.Quantity > 0 ? estimate.Materials / (decimal)estimate.Material.Quantity : 0,
-                    TotalCost = estimate.Materials
-                }
-            }
-    };
+    private PotholeSaved ToPotholeSaved(Pothole pothole, AreaMatch area, RawDetectionReceived message, bool isNewPothole) =>
+        PotholeSavedMessage.Build(
+            pothole,
+            area,
+            // Invariant 5: copy CorrelationId unchanged and set SourceDetectionId, so the trace works.
+            correlationId: message.CorrelationId,
+            sourceDetectionId: message.DetectionId,
+            reason: isNewPothole ? PotholeSavedReason.New : PotholeSavedReason.Changed,
+            imageUrls: new List<string> { message.ImageUrl },
+            _prices);
 }

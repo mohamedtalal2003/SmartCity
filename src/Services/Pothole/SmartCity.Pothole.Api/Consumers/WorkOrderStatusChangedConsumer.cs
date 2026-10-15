@@ -19,6 +19,9 @@ public sealed class WorkOrderStatusChangedConsumer : IConsumer<WorkOrderStatusCh
             return;
 
         await _applyWorkOrderUpdate.HandleAsync(
-            msg.SourceEntityId, msg.WorkOrderId, msg.NewStatus, msg.OccurredAt, context.CancellationToken);
+            new WorkOrderUpdate(
+                msg.SourceEntityId, msg.WorkOrderId, msg.NewStatus, msg.TicketSequence, msg.OccurredAt,
+                msg.CancelReason, msg.DuplicateOfEntityId),
+            context.CancellationToken);
     }
 }

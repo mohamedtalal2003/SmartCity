@@ -20,15 +20,20 @@ builder.AddSmartCityBus(ServiceName, x =>
     x.AddConsumer<RawDetectionReceivedConsumer>();
     x.AddConsumer<WorkOrderCreatedConsumer>();
     x.AddConsumer<WorkOrderStatusChangedConsumer>();
+    x.AddConsumer<DetectionDismissedConsumer>();
+    x.AddConsumer<RepairVerificationObservedConsumer>();
     x.AddSmartCityOutbox<PotholeDbContext>();
 });
 
 builder.AddSmartCityHealthChecks();
 builder.Services.AddGrpc();
+builder.Services.Configure<MapOptions>(builder.Configuration.GetSection(MapOptions.SectionName));
 
 var app = builder.Build();
 app.MapSmartCityHealthChecks();
 app.MapGrpcService<RoadDamageQueryGrpcService>();
+app.MapGrpcService<AreaQueryGrpcService>();
+app.MapGrpcService<PotholeCommandGrpcService>();
 
 using (var scope = app.Services.CreateScope())
 {

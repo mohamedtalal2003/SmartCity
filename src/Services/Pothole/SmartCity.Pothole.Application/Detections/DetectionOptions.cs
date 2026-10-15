@@ -1,3 +1,5 @@
+using SmartCity.Contracts.Enums;
+
 namespace SmartCity.Pothole.Application.Detections;
 
 /// <summary>The matching numbers, from the <c>Detection</c> section of appsettings.</summary>
@@ -19,4 +21,13 @@ public sealed class DetectionOptions
     public double LowBelowCm { get; set; } = 4;
     public double MediumBelowCm { get; set; } = 7;
     public double HighBelowCm { get; set; } = 10;
+
+    /// <summary>The severity for a depth, with the thresholds above. The AI path and officer adds both use it.</summary>
+    public SeverityLevel SeverityFromDepth(double depthCm)
+    {
+        if (depthCm < LowBelowCm) return SeverityLevel.Low;
+        if (depthCm < MediumBelowCm) return SeverityLevel.Medium;
+        if (depthCm < HighBelowCm) return SeverityLevel.High;
+        return SeverityLevel.Critical;
+    }
 }

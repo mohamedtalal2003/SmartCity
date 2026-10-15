@@ -154,6 +154,28 @@ message ListDamagesResponse {
   smartcity.common.v1.PaginationResponse pagination = 2;
 }
 
+// ─── Admin areas (served by Pothole) ─────────────────────────
+// The Istanbul districts and neighborhoods, so the screen can fill
+// the district and neighborhood dropdowns with ids and names.
+service AreaQueryService {
+  rpc ListAreas (ListAreasRequest) returns (ListAreasResponse);
+}
+
+message ListAreasRequest {
+  optional int32 parent_id = 1;         // not set = the 39 districts; a district id = its neighborhoods
+}
+
+message ListAreasResponse {
+  repeated Area areas = 1;              // ordered by name
+}
+
+message Area {
+  int32 id = 1;
+  string name = 2;
+  string level = 3;                     // "District" or "Neighborhood"
+  int32 parent_id = 4;                  // the district of a neighborhood; 0 for a district
+}
+
 // ─── Urban Inventory ─────────────────────────────────────────
 service UrbanInventoryQueryService {
   rpc GetAssetById (GetAssetRequest) returns (AssetDetailResponse);
