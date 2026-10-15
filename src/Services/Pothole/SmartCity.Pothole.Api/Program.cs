@@ -20,6 +20,7 @@ builder.AddSmartCityBus(ServiceName, x =>
     x.AddConsumer<RawDetectionReceivedConsumer>();
     x.AddConsumer<WorkOrderCreatedConsumer>();
     x.AddConsumer<WorkOrderStatusChangedConsumer>();
+    x.AddConsumer<DetectionDismissedConsumer>();
     x.AddSmartCityOutbox<PotholeDbContext>();
 });
 

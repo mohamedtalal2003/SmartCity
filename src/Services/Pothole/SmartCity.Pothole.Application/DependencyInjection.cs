@@ -33,6 +33,7 @@ public static class DependencyInjection
 
         services.AddScoped<HandleDetection>();
         services.AddScoped<ApplyWorkOrderUpdate>();
+        services.AddScoped<DismissDetection>();
         services.AddScoped<AddPotholeByOfficer>();
         services.AddScoped<CorrectPothole>();
 
