@@ -12,7 +12,7 @@ public sealed class Observation
 
     public Guid Id { get; private set; }
     public Guid PotholeId { get; private set; }
-    public Guid? SourceDetectionId { get; private set; }   // null for officer rows (later)
+    public Guid? SourceDetectionId { get; private set; }   // null for officer rows
     public ObservationKind Kind { get; private set; }
     public DetectionType DamageType { get; private set; }
     public SeverityLevel Severity { get; private set; }
@@ -21,7 +21,7 @@ public sealed class Observation
     public double? DepthCm { get; private set; }
     public double? Confidence { get; private set; }
     public string? VerificationResult { get; private set; } // only for VerificationPass (later)
-    public string ImageUrl { get; private set; } = default!;
+    public string? ImageUrl { get; private set; }         // null for a correction (no photo)
     public string? Notes { get; private set; }
     public DateTimeOffset SeenAt { get; private set; }
     public string CreatedBy { get; private set; } = default!;
@@ -41,5 +41,37 @@ public sealed class Observation
         ImageUrl = d.ImageUrl,
         SeenAt = d.SeenAt,
         CreatedBy = "ai"
+    };
+
+    internal static Observation FromOfficerReport(Guid potholeId, OfficerReport r) => new()
+    {
+        Id = Guid.NewGuid(),
+        PotholeId = potholeId,
+        Kind = ObservationKind.OfficerAdd,
+        DamageType = DetectionType.Pothole,
+        Severity = r.Severity,
+        Stage = DamageStage.Pothole,
+        AreaM2 = r.AreaM2,
+        DepthCm = r.DepthCm,
+        ImageUrl = r.ImageUrl,
+        Notes = r.Notes,
+        SeenAt = r.At,
+        CreatedBy = r.CreatedBy
+    };
+
+    /// <summary>The values after the correction, with the reason in <see cref="Notes"/>.</summary>
+    internal static Observation FromCorrection(Pothole p, Correction c) => new()
+    {
+        Id = Guid.NewGuid(),
+        PotholeId = p.Id,
+        Kind = ObservationKind.Correction,
+        DamageType = p.DamageType,
+        Severity = p.CurrentSeverity,
+        Stage = p.CurrentStage,
+        AreaM2 = p.AreaM2,
+        DepthCm = p.DepthCm,
+        Notes = c.Reason,
+        SeenAt = c.At,
+        CreatedBy = c.CreatedBy
     };
 }

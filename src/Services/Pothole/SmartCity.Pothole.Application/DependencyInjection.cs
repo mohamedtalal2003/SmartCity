@@ -1,6 +1,8 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using SmartCity.Pothole.Application.Commands;
 using SmartCity.Pothole.Application.Detections;
+using SmartCity.Pothole.Application.Officers;
 using SmartCity.Pothole.Application.WorkOrders;
 using SmartCity.Pothole.Domain.Estimation;
 
@@ -20,10 +22,19 @@ public static class DependencyInjection
                 "The PotholePrices section in appsettings is missing or incomplete.")
             .ValidateOnStart();
 
+        // Officer commands only accept photos from our own blob storage.
+        services.AddOptions<BlobStorageOptions>()
+            .Bind(configuration.GetSection(BlobStorageOptions.SectionName))
+            .Validate(o => Uri.IsWellFormedUriString(o.PublicBaseUrl, UriKind.Absolute),
+                "S3:PublicBaseUrl in appsettings is missing or not a URL.")
+            .ValidateOnStart();
+
         services.AddSingleton(TimeProvider.System);
 
         services.AddScoped<HandleDetection>();
         services.AddScoped<ApplyWorkOrderUpdate>();
+        services.AddScoped<AddPotholeByOfficer>();
+        services.AddScoped<CorrectPothole>();
 
         return services;
     }

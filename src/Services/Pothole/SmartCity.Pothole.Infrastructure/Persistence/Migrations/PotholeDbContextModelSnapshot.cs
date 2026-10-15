@@ -223,7 +223,6 @@ namespace SmartCity.Pothole.Infrastructure.Persistence.Migrations
                         .HasColumnName("depth_cm");
 
                     b.Property<string>("ImageUrl")
-                        .IsRequired()
                         .HasMaxLength(1000)
                         .HasColumnType("character varying(1000)")
                         .HasColumnName("image_url");
@@ -457,6 +456,46 @@ namespace SmartCity.Pothole.Infrastructure.Persistence.Migrations
                     NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex(new[] { "Geometry" }, "ix_admin_areas_geometry"), "gist");
 
                     b.ToTable("admin_areas", (string)null);
+                });
+
+            modelBuilder.Entity("SmartCity.Pothole.Infrastructure.Persistence.ProcessedIdempotencyKey", b =>
+                {
+                    b.Property<string>("Key")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("key");
+
+                    b.Property<bool>("Created")
+                        .HasColumnType("boolean")
+                        .HasColumnName("created");
+
+                    b.Property<Guid?>("EntityId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("entity_id");
+
+                    b.Property<string>("ErrorCode")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("error_code");
+
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("message");
+
+                    b.Property<DateTimeOffset>("ProcessedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("processed_at");
+
+                    b.Property<bool>("Success")
+                        .HasColumnType("boolean")
+                        .HasColumnName("success");
+
+                    b.HasKey("Key");
+
+                    b.ToTable("processed_idempotency_keys", (string)null);
                 });
 
             modelBuilder.Entity("MassTransit.EntityFrameworkCoreIntegration.OutboxMessage", b =>

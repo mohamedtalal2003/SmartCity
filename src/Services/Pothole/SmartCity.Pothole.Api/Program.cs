@@ -30,6 +30,7 @@ var app = builder.Build();
 app.MapSmartCityHealthChecks();
 app.MapGrpcService<RoadDamageQueryGrpcService>();
 app.MapGrpcService<AreaQueryGrpcService>();
+app.MapGrpcService<PotholeCommandGrpcService>();
 
 using (var scope = app.Services.CreateScope())
 {

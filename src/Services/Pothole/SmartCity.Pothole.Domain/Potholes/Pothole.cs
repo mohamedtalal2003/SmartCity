@@ -8,7 +8,8 @@ namespace SmartCity.Pothole.Domain.Potholes;
 /// <see cref="Observation"/> saved with it in the same transaction.
 ///
 /// A crack and a pothole in the same place are one damage record. Its type and stage only move
-/// forward (crack → pothole), never back. Closed is final: there is no method to reopen.
+/// forward (crack → pothole), never back, unless an officer corrects them. Closed is final: there is
+/// no method to reopen.
 /// Every method that changes state increases <see cref="RowVersion"/> by one, so two writers on the
 /// same pothole at the same moment cannot both win.
 ///
@@ -87,6 +88,85 @@ public sealed class Pothole
     }
 
     /// <summary>
+    /// A new Open pothole reported by a person. No confidence check and no 30-day rule: a person saw it.
+    /// <see cref="SightingsCount"/> stays 0 because it counts AI detections only.
+    /// </summary>
+    public static Pothole AddedByOfficer(OfficerReport r, int? districtId, int? neighborhoodId, PotholePrices prices)
+    {
+        if (r.Source == PotholeSource.Ai)
+            throw new DomainException("An officer report must have the source Officer or CitizenReport.");
+        CheckSize(r.AreaM2, r.DepthCm);
+
+        var pothole = new Pothole
+        {
+            Id = Guid.NewGuid(),
+            Location = r.Location,
+            DistrictId = districtId,
+            NeighborhoodId = neighborhoodId,
+            // The officer command adds a pothole, so the type and stage are Pothole.
+            DamageType = DetectionType.Pothole,
+            Status = PotholeStatus.Open,
+            CurrentSeverity = r.Severity,
+            CurrentStage = DamageStage.Pothole,
+            AreaM2 = r.AreaM2,
+            DepthCm = r.DepthCm,
+            // SKELETON: Confidence is the AI confidence of the latest detection; a person's report has none,
+            // so it is 1 (fully sure). The design leaves this open.
+            Confidence = 1.0,
+            Source = r.Source,
+            SightingsCount = 0,
+            Estimate = PotholeEstimator.Estimate(r.Severity, DamageStage.Pothole, r.AreaM2, r.DepthCm, prices),
+            FirstSeenAt = r.At,
+            LastSeenAt = r.At
+        };
+
+        pothole._observations.Add(Observation.FromOfficerReport(pothole.Id, r));
+        return pothole;
+    }
+
+    /// <summary>
+    /// A person reported this open pothole again. Only the observation (with its photo) is saved;
+    /// nothing else changes, so no event goes out.
+    /// </summary>
+    public void AddReport(OfficerReport r)
+    {
+        if (Status == PotholeStatus.Closed)
+            throw new DomainException($"Pothole {Id} is closed. A closed pothole does not take new reports.");
+
+        _observations.Add(Observation.FromOfficerReport(Id, r));
+        RowVersion++;
+    }
+
+    /// <summary>
+    /// An officer fixes the data. Unlike the AI, an officer may lower the severity.
+    /// Rejected when the pothole is closed, the reason is empty, or nothing would change.
+    /// </summary>
+    public void Correct(Correction c, PotholePrices prices)
+    {
+        if (Status == PotholeStatus.Closed)
+            throw new DomainException($"Pothole {Id} is closed. A closed pothole cannot be corrected.");
+        if (string.IsNullOrWhiteSpace(c.Reason))
+            throw new DomainException("A correction needs a reason.");
+        CheckSize(c.AreaM2, c.DepthCm);
+
+        var severity = c.Severity ?? CurrentSeverity;
+        var stage = c.Stage ?? CurrentStage;
+        var areaM2 = c.AreaM2 ?? AreaM2;
+        var depthCm = c.DepthCm ?? DepthCm;
+        if (severity == CurrentSeverity && stage == CurrentStage && areaM2 == AreaM2 && depthCm == DepthCm)
+            throw new DomainException("The correction changes nothing.");
+
+        CurrentSeverity = severity;
+        CurrentStage = stage;
+        AreaM2 = areaM2;
+        DepthCm = depthCm;
+        Estimate = PotholeEstimator.Estimate(CurrentSeverity, CurrentStage, AreaM2, DepthCm, prices);
+
+        _observations.Add(Observation.FromCorrection(this, c));
+        RowVersion++;
+    }
+
+    /// <summary>
     /// The AI saw this open pothole again. Returns true when the severity, the stage or the type
     /// changed, which is when Pothole publishes <c>PotholeSaved</c>.
     /// </summary>
@@ -105,7 +185,7 @@ public sealed class Pothole
             LastSeenAt = d.SeenAt;
 
         // The AI never lowers the severity: keep the higher of the old and the new one.
-        // (Only an officer correction may lower it, later.)
+        // (Only an officer correction may lower it, see Correct.)
         if (d.Severity > CurrentSeverity)
             CurrentSeverity = d.Severity;
 
@@ -175,6 +255,15 @@ public sealed class Pothole
         ClosedAt = at;
         DuplicateOfId = reason == Potholes.ClosedReason.Duplicate ? duplicateOfId : null;
         RowVersion++;
+    }
+
+    // A size, when given, is a real measurement (the table checks area_m2 > 0 and depth_cm > 0).
+    private static void CheckSize(double? areaM2, double? depthCm)
+    {
+        if (areaM2 <= 0)
+            throw new DomainException("The area must be more than 0 m².");
+        if (depthCm <= 0)
+            throw new DomainException("The depth must be more than 0 cm.");
     }
 
     // RoadCrack and SurfaceDamage are below Pothole.

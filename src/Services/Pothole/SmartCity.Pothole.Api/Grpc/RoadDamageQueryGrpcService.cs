@@ -102,7 +102,7 @@ public sealed class RoadDamageQueryGrpcService : RoadDamageQueryService.RoadDama
             TimestampUtc = o.SeenAt.ToUnixTimeMilliseconds(),
             EventType = o.Id == firstObservationId ? "DETECTED" : "RE_DETECTED",
             Detail = $"{o.DamageType}, severity {o.Severity}, stage {o.Stage}, confidence {o.Confidence:P0}",
-            ImageUrl = o.ImageUrl
+            ImageUrl = o.ImageUrl ?? ""
         }));
         return response;
     }
@@ -112,7 +112,7 @@ public sealed class RoadDamageQueryGrpcService : RoadDamageQueryService.RoadDama
             ? id
             : throw new RpcException(new Status(StatusCode.InvalidArgument, "Invalid damage_id"));
 
-    // The columns the responses need, the area names, and the image of the newest observation.
+    // The columns the responses need, the area names, and the newest photo.
     private IQueryable<PotholeRow> ToRows(IQueryable<Pothole> potholes) =>
         potholes.Select(p => new PotholeRow(
             p.Id,
@@ -125,7 +125,7 @@ public sealed class RoadDamageQueryGrpcService : RoadDamageQueryService.RoadDama
             p.FirstSeenAt,
             p.LastSeenAt,
             _db.Observations
-                .Where(o => o.PotholeId == p.Id)
+                .Where(o => o.PotholeId == p.Id && o.ImageUrl != null) // a correction has no photo
                 .OrderByDescending(o => o.SeenAt)
                 .Select(o => o.ImageUrl)
                 .FirstOrDefault(),

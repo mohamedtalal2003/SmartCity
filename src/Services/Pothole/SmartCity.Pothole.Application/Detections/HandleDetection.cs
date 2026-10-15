@@ -136,13 +136,7 @@ public sealed class HandleDetection
     {
         // SKELETON: with no depth from the AI the severity is Medium (as in the old stub). The real AI
         // will always send its measurements.
-        if (depthCm is null)
-            return SeverityLevel.Medium;
-
-        if (depthCm < _options.LowBelowCm) return SeverityLevel.Low;
-        if (depthCm < _options.MediumBelowCm) return SeverityLevel.Medium;
-        if (depthCm < _options.HighBelowCm) return SeverityLevel.High;
-        return SeverityLevel.Critical;
+        return depthCm is null ? SeverityLevel.Medium : _options.SeverityFromDepth(depthCm.Value);
     }
 
     private PotholeSaved ToPotholeSaved(Pothole pothole, AreaMatch area, RawDetectionReceived message, bool isNewPothole) =>
