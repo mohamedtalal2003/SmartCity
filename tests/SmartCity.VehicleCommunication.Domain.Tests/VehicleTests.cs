@@ -124,13 +124,14 @@ public class VehicleTests
     }
 
     [Fact]
-    public void MarkOnline_and_MarkOffline_change_only_the_connection()
+    public void MarkOnline_and_MarkOffline_do_not_change_the_admin_status()
     {
         var vehicle = TestData.Vehicle();
         vehicle.Suspend(TestData.Now);
 
         vehicle.MarkOnline(TestData.Now);
         Assert.Equal(VehicleConnectionStatus.Online, vehicle.ConnectionStatus);
+        Assert.Equal(TestData.Now, vehicle.LastSeenAt);
 
         vehicle.MarkOffline(TestData.Now);
         Assert.Equal(VehicleConnectionStatus.Offline, vehicle.ConnectionStatus);

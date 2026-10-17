@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
+using SmartCity.Contracts.Enums;
 using SmartCity.VehicleCommunication.Application.Abstractions;
 using SmartCity.VehicleCommunication.Application.Commands;
 using SmartCity.VehicleCommunication.Domain.Frames;
@@ -19,6 +20,18 @@ public sealed class VehicleRepository : IVehicleRepository
         _db.Vehicles.FirstOrDefaultAsync(v => v.Id == vehicleId, ct);
 
     public void Add(Vehicle vehicle) => _db.Vehicles.Add(vehicle);
+
+    public async Task<IReadOnlyList<string>> ListActiveVehicleIdsAsync(CancellationToken ct) =>
+        await _db.Vehicles.AsNoTracking()
+            .Where(v => v.Status == VehicleStatus.Active)
+            .OrderBy(v => v.Id)
+            .Select(v => v.Id)
+            .ToListAsync(ct);
+
+    public async Task<IReadOnlyList<Vehicle>> ListOnlineNotSeenSinceAsync(DateTimeOffset cutoff, CancellationToken ct) =>
+        await _db.Vehicles
+            .Where(v => v.ConnectionStatus == VehicleConnectionStatus.Online && (v.LastSeenAt == null || v.LastSeenAt < cutoff))
+            .ToListAsync(ct);
 
     public Task<bool> ReceivedFrameExistsAsync(Guid frameId, CancellationToken ct) =>
         _db.ReceivedFrames.AnyAsync(f => f.FrameId == frameId, ct);
@@ -72,4 +85,17 @@ public sealed class VehicleRepository : IVehicleRepository
     }
 
     public Task SaveChangesAsync(CancellationToken ct) => _db.SaveChangesAsync(ct);
+
+    public async Task<bool> TrySaveAsync(CancellationToken ct)
+    {
+        try
+        {
+            await _db.SaveChangesAsync(ct);
+            return true;
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            return false;
+        }
+    }
 }

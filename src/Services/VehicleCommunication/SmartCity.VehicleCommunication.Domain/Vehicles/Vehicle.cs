@@ -102,10 +102,11 @@ public sealed class Vehicle
         Changed(at);
     }
 
-    /// <summary>The vehicle said "online" on MQTT (V6).</summary>
+    /// <summary>The vehicle said "online" on MQTT (V6). Saying it is a sign of life, so it also counts as seen.</summary>
     public void MarkOnline(DateTimeOffset at)
     {
         ConnectionStatus = VehicleConnectionStatus.Online;
+        LastSeenAt = at;
         Changed(at);
     }
 

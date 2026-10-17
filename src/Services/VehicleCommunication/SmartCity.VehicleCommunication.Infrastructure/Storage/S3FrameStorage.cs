@@ -9,6 +9,7 @@ using Polly.CircuitBreaker;
 using Polly.Retry;
 using SmartCity.BuildingBlocks;
 using SmartCity.VehicleCommunication.Application.Abstractions;
+using SmartCity.VehicleCommunication.Application.Fleet;
 
 namespace SmartCity.VehicleCommunication.Infrastructure.Storage;
 
@@ -20,6 +21,7 @@ namespace SmartCity.VehicleCommunication.Infrastructure.Storage;
 /// <item>Retry: 3 quick retries inside the same upload (200, 400, 800 ms).</item>
 /// <item>Timeout (inner): one storage call that hangs counts as failed.</item>
 /// </list>
+/// When the breaker opens, the vehicles are told to pause uploads (<see cref="FleetStatus"/>, V13).
 /// It has its own S3 client with the SDK's own retries turned off, so Polly is the only place that retries.
 /// </summary>
 public sealed class S3FrameStorage : IFrameStorage, IDisposable
@@ -31,7 +33,11 @@ public sealed class S3FrameStorage : IFrameStorage, IDisposable
     private readonly ResiliencePipeline _pipeline;
     private readonly ILogger<S3FrameStorage> _logger;
 
-    public S3FrameStorage(IOptions<S3Options> s3Options, IOptions<FrameStorageOptions> options, ILogger<S3FrameStorage> logger)
+    public S3FrameStorage(
+        IOptions<S3Options> s3Options,
+        IOptions<FrameStorageOptions> options,
+        FleetStatus fleetStatus,
+        ILogger<S3FrameStorage> logger)
     {
         _options = options.Value;
         _publicBaseUrl = s3Options.Value.PublicBaseUrl.TrimEnd('/');
@@ -48,11 +54,11 @@ public sealed class S3FrameStorage : IFrameStorage, IDisposable
                 BreakDuration = TimeSpan.FromSeconds(_options.BreakerBreakSeconds),
                 ManualControl = _breaker,
                 ShouldHandle = notCancelled,
-                OnOpened = _ =>
+                OnOpened = async _ =>
                 {
                     _logger.LogError("Frame storage circuit breaker opened: uploads are refused for {Seconds} s",
                         _options.BreakerBreakSeconds);
-                    return ValueTask.CompletedTask;
+                    await fleetStatus.PauseAsync(CancellationToken.None);
                 },
                 OnClosed = _ =>
                 {

@@ -5,8 +5,6 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="MQTTnet" />
-    <PackageReference Include="StackExchange.Redis" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="../SmartCity.VehicleCommunication.Application/SmartCity.VehicleCommunication.Application.csproj" />

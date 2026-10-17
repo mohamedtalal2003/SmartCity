@@ -4,6 +4,8 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
+    <PackageReference Include="MQTTnet" />
+    <PackageReference Include="StackExchange.Redis" />
     <!-- Retry + circuit breaker around the frame storage (V13). -->
     <PackageReference Include="Polly.Core" />
   </ItemGroup>
