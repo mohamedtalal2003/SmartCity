@@ -158,7 +158,8 @@ public sealed class MqttSubscriberService : BackgroundService
         using var scope = _services.CreateScope();
         var s3 = scope.ServiceProvider.GetRequiredService<IAmazonS3>();
         var s3Options = scope.ServiceProvider.GetRequiredService<IOptions<S3Options>>().Value;
-        var publishEndpoint = scope.ServiceProvider.GetRequiredService<IPublishEndpoint>();
+        // IBus, not the scoped IPublishEndpoint: that one is the outbox now, and this code saves nothing.
+        var publishEndpoint = scope.ServiceProvider.GetRequiredService<IBus>();
 
         using var stream = new MemoryStream(msg.PayloadSegment.ToArray());
         await s3.PutObjectAsync(new PutObjectRequest
@@ -205,7 +206,8 @@ public sealed class MqttSubscriberService : BackgroundService
         }
 
         using var scope = _services.CreateScope();
-        var publishEndpoint = scope.ServiceProvider.GetRequiredService<IPublishEndpoint>();
+        // IBus, not the scoped IPublishEndpoint: that one is the outbox now, and this code saves nothing.
+        var publishEndpoint = scope.ServiceProvider.GetRequiredService<IBus>();
         var redis = scope.ServiceProvider.GetRequiredService<IConnectionMultiplexer>();
 
         var json = JsonDocument.Parse(msg.PayloadSegment);

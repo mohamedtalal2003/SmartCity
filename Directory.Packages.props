@@ -36,6 +36,8 @@
 
     <!-- Resilience (timeout, retry, circuit-breaker) for gRPC clients in the API Gateway -->
     <PackageVersion Include="Microsoft.Extensions.Http.Resilience" Version="9.0.0" />
+    <!-- Retry + circuit breaker around frame storage in Vehicle Communication. Same version the package above brings in. -->
+    <PackageVersion Include="Polly.Core" Version="8.4.2" />
 
     <PackageVersion Include="Swashbuckle.AspNetCore" Version="6.9.0" />
 

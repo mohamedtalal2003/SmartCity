@@ -3,6 +3,11 @@
     <Description>Vehicle Communication infrastructure: EF Core persistence, frame storage (S3), MQTT, Redis and the MassTransit publisher.</Description>
   </PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
+    <!-- Retry + circuit breaker around the frame storage (V13). -->
+    <PackageReference Include="Polly.Core" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="../SmartCity.VehicleCommunication.Application/SmartCity.VehicleCommunication.Application.csproj" />
     <ProjectReference Include="../../../BuildingBlocks/SmartCity.BuildingBlocks/SmartCity.BuildingBlocks.csproj" />
   </ItemGroup>
