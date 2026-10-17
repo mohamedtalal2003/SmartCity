@@ -11,7 +11,7 @@ using SmartCity.Contracts.Common;
 using SmartCity.Contracts.Events.Ingestion;
 using StackExchange.Redis;
 
-namespace SmartCity.VehicleCommunication.Mqtt;
+namespace SmartCity.VehicleCommunication.Api.Mqtt;
 
 public sealed class MqttSubscriberService : BackgroundService
 {

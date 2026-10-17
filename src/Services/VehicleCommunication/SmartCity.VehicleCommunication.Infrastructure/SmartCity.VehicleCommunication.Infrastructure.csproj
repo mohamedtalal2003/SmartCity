@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Description>Vehicle Communication infrastructure: EF Core persistence, frame storage (S3), MQTT, Redis and the MassTransit publisher.</Description>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../SmartCity.VehicleCommunication.Application/SmartCity.VehicleCommunication.Application.csproj" />
+    <ProjectReference Include="../../../BuildingBlocks/SmartCity.BuildingBlocks/SmartCity.BuildingBlocks.csproj" />
+  </ItemGroup>
+</Project>

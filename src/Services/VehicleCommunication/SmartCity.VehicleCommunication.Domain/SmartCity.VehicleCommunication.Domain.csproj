@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Description>Vehicle Communication domain: the vehicle aggregate and the frame checks. No EF, no MassTransit, no ASP.NET.</Description>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- Only for the shared enums (VehicleStatus, VehicleConnectionStatus). No events, no protos. -->
+    <ProjectReference Include="../../../SmartCity.Contracts/SmartCity.Contracts.csproj" />
+  </ItemGroup>
+</Project>

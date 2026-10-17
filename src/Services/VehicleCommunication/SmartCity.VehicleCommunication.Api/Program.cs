@@ -1,5 +1,5 @@
 using SmartCity.BuildingBlocks;
-using SmartCity.VehicleCommunication.Mqtt;
+using SmartCity.VehicleCommunication.Api.Mqtt;
 using StackExchange.Redis;
 
 const string ServiceName = "VehicleCommunication";

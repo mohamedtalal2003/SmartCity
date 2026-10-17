@@ -126,7 +126,7 @@ services:
   vehiclecommunication:
     build:
       context: .
-      dockerfile: src/Services/VehicleCommunication/SmartCity.VehicleCommunication/Dockerfile
+      dockerfile: src/Services/VehicleCommunication/SmartCity.VehicleCommunication.Api/Dockerfile
       network: host  # Cloud session only: NuGet restore needs the host proxy. Remove for local/CI builds.
     profiles: ["apps"]
     ports:

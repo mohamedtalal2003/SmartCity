@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Description>Vehicle Communication use cases. Knows the domain and the ports it needs; never EF, S3, MQTT or MassTransit.</Description>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- For Options, Logging and DI abstractions only (same as BuildingBlocks); no new packages. -->
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../SmartCity.VehicleCommunication.Domain/SmartCity.VehicleCommunication.Domain.csproj" />
+    <!-- Publishing FrameReceived and VehicleTelemetryReceived is part of the use cases, so the events are used here. -->
+    <ProjectReference Include="../../../SmartCity.Contracts/SmartCity.Contracts.csproj" />
+  </ItemGroup>
+</Project>
