@@ -13,6 +13,10 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="MQTTnet" />
+    <PackageReference Include="Grpc.Net.Client" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- The vehicle gRPC client (vehicle.proto). -->
+    <ProjectReference Include="../../src/SmartCity.Contracts.Grpc/SmartCity.Contracts.Grpc.csproj" />
   </ItemGroup>
 </Project>

@@ -1,25 +1,26 @@
 using System.Net;
 using System.Text.Json;
-using MQTTnet;
-using MQTTnet.Client;
-using MQTTnet.Protocol;
+using Google.Protobuf;
+using Grpc.Core;
+using Grpc.Net.Client;
+using Smartcity.Vehicle.V1;
 using Xunit;
 using Xunit.Abstractions;
 
 namespace SmartCity.EndToEnd.Tests;
 
 /// <summary>
-/// Publishes one frame over MQTT with ForceDetection enabled on AiDetection,
+/// Uploads one frame over gRPC (like a vehicle) with ForceDetection enabled on AiDetection,
 /// then verifies the full chain: frame → pothole → cost estimate → work order.
-/// Requires the local stack to be running (docker compose + all services).
-/// AiDetection must have FakeAi:ForceDetection=true.
+/// Requires the local stack to be running (docker compose + all services) and the dev vehicle
+/// MUN-VEH-001 (Seed:DevVehicles). AiDetection must have FakeAi:ForceDetection=true.
 /// </summary>
 public class FrameToWorkOrderTests : IAsyncLifetime
 {
     private readonly ITestOutputHelper _out;
     private readonly HttpClient _http = new() { BaseAddress = new Uri("http://localhost:5000") };
     private readonly HttpClient _s3 = new();
-    private IMqttClient _mqtt = null!;
+    private readonly GrpcChannel _vehicleComm = GrpcChannel.ForAddress("http://localhost:5211");
     private static readonly JsonSerializerOptions Json = new()
     {
         PropertyNameCaseInsensitive = true,
@@ -36,56 +37,45 @@ public class FrameToWorkOrderTests : IAsyncLifetime
 
     public FrameToWorkOrderTests(ITestOutputHelper output) => _out = output;
 
-    public async Task InitializeAsync()
-    {
-        var factory = new MqttFactory();
-        _mqtt = factory.CreateMqttClient();
-        var options = new MqttClientOptionsBuilder()
-            .WithTcpServer("localhost", 1883)
-            .WithClientId($"e2e-test-{Guid.NewGuid():N}"[..30])
-            .WithProtocolVersion(MQTTnet.Formatter.MqttProtocolVersion.V500)
-            .Build();
-        await _mqtt.ConnectAsync(options);
-    }
+    public Task InitializeAsync() => Task.CompletedTask;
 
-    public async Task DisposeAsync()
+    public Task DisposeAsync()
     {
-        if (_mqtt.IsConnected)
-            await _mqtt.DisconnectAsync();
-        _mqtt.Dispose();
+        _vehicleComm.Dispose();
         _http.Dispose();
         _s3.Dispose();
+        return Task.CompletedTask;
     }
 
     [Fact]
-    public async Task PublishFrame_CreatesWorkOrderWithMatchingEstimate()
+    public async Task UploadFrame_CreatesWorkOrderWithMatchingEstimate()
     {
-        // ── 1. Publish one frame over MQTT ──────────────────────────
+        // ── 1. Upload one frame over gRPC, like a vehicle ──────────
         var frameId = Guid.NewGuid();
         var vehicleId = "MUN-VEH-001";
-        var capturedAt = DateTimeOffset.UtcNow;
         // Kadıköy district coordinates
         const double lat = 40.985;
         const double lon = 29.030;
 
-        var frameMsg = new MqttApplicationMessageBuilder()
-            .WithTopic($"vehicles/{vehicleId}/frames")
-            .WithPayload(TinyJpeg)
-            .WithQualityOfServiceLevel(MqttQualityOfServiceLevel.AtLeastOnce)
-            .WithUserProperty("frameId", frameId.ToString())
-            .WithUserProperty("capturedAt", capturedAt.ToString("O"))
-            .WithUserProperty("lat", lat.ToString("F6"))
-            .WithUserProperty("lon", lon.ToString("F6"))
-            .WithUserProperty("accuracy", "2.5")
-            .WithUserProperty("heading", "90.0")
-            .WithUserProperty("speed", "35.0")
-            .WithUserProperty("width", "1920")
-            .WithUserProperty("height", "1080")
-            .WithUserProperty("contentType", "image/jpeg")
-            .Build();
+        var ingest = new VehicleIngestService.VehicleIngestServiceClient(_vehicleComm);
+        var reply = await ingest.UploadFrameAsync(new UploadFrameRequest
+        {
+            FrameId = frameId.ToString(),
+            CapturedAtUtc = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+            Latitude = lat,
+            Longitude = lon,
+            GpsAccuracyM = 2.5,
+            GpsSatellites = 9,
+            HeadingDeg = 90.0,
+            SpeedKmh = 35.0,
+            Image = ByteString.CopyFrom(TinyJpeg),
+            ContentType = "image/jpeg",
+            WidthPx = 1920,
+            HeightPx = 1080,
+        }, new Metadata { { "x-vehicle-id", vehicleId } });
 
-        await _mqtt.PublishAsync(frameMsg);
-        _out.WriteLine($"Published frame {frameId}");
+        Assert.Equal(UploadResult.Saved, reply.Result);
+        _out.WriteLine($"Uploaded frame {frameId}: {reply.Result}");
 
         // ── 2. Poll GET /api/work-orders until one appears with EstimatedCost > 0 ──
         // Cost and WorkOrder consumers process PotholeSaved in parallel, so the

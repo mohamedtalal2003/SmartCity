@@ -52,9 +52,16 @@ The `apps` profile keeps them separate so `docker compose up -d` (without
 dotnet run --project tools/VehicleSimulator -- --vehicles 5 --interval-ms 2000
 ```
 
-The simulator publishes camera frames over MQTT. With `FakeAi:ForceDetection`
-enabled on AiDetection, every frame triggers a detection through the full
-pipeline: pothole saved, cost estimated, work order created, notification sent.
+The simulator behaves like the vehicle's Raspberry Pi
+(`docs/design/vehicle/vehicle-protocol.md`): it uploads camera frames over gRPC
+(port 5211) from a local queue and sends heartbeats and online/offline over MQTT.
+With `FakeAi:ForceDetection` enabled on AiDetection, every frame triggers a
+detection through the full pipeline: pothole saved, cost estimated, work order
+created, notification sent.
+
+Options for the hard cases: `--outside-istanbul-every N` (REJECTED),
+`--resend-every N` (DUPLICATE), `--blocked-retry-s N`. It prints a summary of
+the replies every 10 seconds.
 
 ### 4. Run tests
 
@@ -66,7 +73,7 @@ dotnet test SmartCity.sln
 dotnet test tests/SmartCity.EndToEnd.Tests
 ```
 
-The E2E test publishes one MQTT frame and verifies the full chain: frame
+The E2E test uploads one frame over gRPC and verifies the full chain: frame
 ingestion, pothole detection, cost estimation, and work order creation with a
 matching estimated cost.
 

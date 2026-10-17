@@ -4,5 +4,10 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="MQTTnet" />
+    <PackageReference Include="Grpc.Net.Client" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- The generated gRPC client for vehicle.proto (VehicleIngestService), the same proto the Pi uses. -->
+    <ProjectReference Include="../../src/SmartCity.Contracts.Grpc/SmartCity.Contracts.Grpc.csproj" />
   </ItemGroup>
 </Project>
