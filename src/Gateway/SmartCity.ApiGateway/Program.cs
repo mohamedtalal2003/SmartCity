@@ -30,6 +30,8 @@ RegisterGrpcClient<CostQueryService.CostQueryServiceClient>(builder, grpcSection
 RegisterGrpcClient<WorkOrderQueryService.WorkOrderQueryServiceClient>(builder, grpcSection["WorkOrder"]!);
 RegisterGrpcClient<WorkOrderCommandService.WorkOrderCommandServiceClient>(builder, grpcSection["WorkOrder"]!);
 RegisterGrpcClient<NotificationQueryService.NotificationQueryServiceClient>(builder, grpcSection["Notification"]!);
+RegisterGrpcClient<VehicleAdminService.VehicleAdminServiceClient>(builder, grpcSection["VehicleCommunication"]!);
+RegisterGrpcClient<VehicleQueryService.VehicleQueryServiceClient>(builder, grpcSection["VehicleCommunication"]!);
 
 var redisCs = builder.Configuration["Redis:ConnectionString"] ?? "localhost:6379";
 builder.Services.AddSingleton<IConnectionMultiplexer>(ConnectionMultiplexer.Connect(redisCs));
@@ -443,6 +445,103 @@ app.MapGet("/api/vehicles/live", async (IConnectionMultiplexer redis) =>
     return Results.Ok(vehicles);
 });
 
+// ─── Vehicles (admin, served by Vehicle Communication) ────────
+// GET /api/vehicles?status=Suspended&connectionStatus=Online&district=13&page=<nextPage>&pageSize=50 (V5)
+app.MapGet("/api/vehicles", async (HttpRequest http, VehicleQueryService.VehicleQueryServiceClient client) =>
+{
+    var request = new ListVehiclesRequest
+    {
+        Status = Enum.TryParse<Smartcity.Enums.V1.VehicleStatus>(http.Query["status"], true, out var status)
+            ? status : Smartcity.Enums.V1.VehicleStatus.Unspecified,
+        ConnectionStatus = Enum.TryParse<Smartcity.Enums.V1.VehicleConnectionStatus>(http.Query["connectionStatus"], true, out var connection)
+            ? connection : Smartcity.Enums.V1.VehicleConnectionStatus.Unspecified,
+        Pagination = new PaginationRequest
+        {
+            PageSize = int.TryParse(http.Query["pageSize"], out var pageSize) ? pageSize : 50,
+            PageToken = http.Query["page"].ToString(),
+        },
+    };
+    request.DistrictIds.AddRange(QueryInts(http.Query, "district"));
+
+    return await CallGrpc(async () =>
+    {
+        var response = await client.ListVehiclesAsync(request);
+        return Results.Json(new
+        {
+            records = response.Records.Select(VehicleJson),
+            totalCount = response.Pagination.TotalCount,
+            nextPage = response.Pagination.NextPageToken,
+        }, jsonOptions);
+    });
+});
+
+app.MapGet("/api/vehicles/{id}", async (string id, VehicleQueryService.VehicleQueryServiceClient client) =>
+{
+    return await CallGrpc(async () =>
+    {
+        var response = await client.GetVehicleAsync(new GetVehicleRequest { VehicleId = id });
+        return Results.Json(VehicleJson(response), jsonOptions);
+    });
+});
+
+// 201 when the vehicle was added (V1).
+app.MapPost("/api/vehicles", async (HttpContext ctx, VehicleAdminService.VehicleAdminServiceClient client) =>
+{
+    if (!TryGetIdempotencyKey(ctx, out var key))
+        return Results.BadRequest(new { error = "Missing Idempotency-Key header" });
+
+    return await CallGrpcCommand(async () =>
+    {
+        var body = await ctx.Request.ReadFromJsonAsync<AddVehicleBody>(jsonOptions);
+        if (body is null)
+            return Results.BadRequest(new { error = "Missing body" });
+
+        var request = new AddVehicleRequest
+        {
+            VehicleId = body.VehicleId ?? "",
+            Plate = body.Plate ?? "",
+            Notes = body.Notes ?? "",
+            Metadata = BuildMetadata(ctx, key),
+        };
+        if (body.DistrictId is not null) request.DistrictId = body.DistrictId.Value;
+
+        var response = await client.AddVehicleAsync(request);
+        return response.Success && response.Created
+            ? Results.Created($"/api/vehicles/{response.EntityId}", response)
+            : MapCommandResponse(response);
+    });
+});
+
+// Only the fields in the body change (V2). "districtId": 0 clears the district.
+app.MapPatch("/api/vehicles/{id}", async (string id, HttpContext ctx, VehicleAdminService.VehicleAdminServiceClient client) =>
+{
+    if (!TryGetIdempotencyKey(ctx, out var key))
+        return Results.BadRequest(new { error = "Missing Idempotency-Key header" });
+
+    return await CallGrpcCommand(async () =>
+    {
+        var body = await ctx.Request.ReadFromJsonAsync<UpdateVehicleBody>(jsonOptions);
+        if (body is null)
+            return Results.BadRequest(new { error = "Missing body" });
+
+        var request = new UpdateVehicleRequest { VehicleId = id, Metadata = BuildMetadata(ctx, key) };
+        if (body.Plate is not null) request.Plate = body.Plate;
+        if (body.DistrictId is not null) request.DistrictId = body.DistrictId.Value;
+        if (body.Notes is not null) request.Notes = body.Notes;
+
+        var response = await client.UpdateVehicleAsync(request);
+        return MapCommandResponse(response);
+    });
+});
+
+// Suspend, resume, retire (V3, V4). Optional body {"reason": "..."}.
+app.MapPost("/api/vehicles/{id}/suspend", (string id, HttpContext ctx, VehicleAdminService.VehicleAdminServiceClient client) =>
+    ChangeVehicleStatus(id, ctx, jsonOptions, request => client.SuspendVehicleAsync(request).ResponseAsync));
+app.MapPost("/api/vehicles/{id}/resume", (string id, HttpContext ctx, VehicleAdminService.VehicleAdminServiceClient client) =>
+    ChangeVehicleStatus(id, ctx, jsonOptions, request => client.ResumeVehicleAsync(request).ResponseAsync));
+app.MapPost("/api/vehicles/{id}/retire", (string id, HttpContext ctx, VehicleAdminService.VehicleAdminServiceClient client) =>
+    ChangeVehicleStatus(id, ctx, jsonOptions, request => client.RetireVehicleAsync(request).ResponseAsync));
+
 // ─── Cost Estimates ───────────────────────────────────────────
 app.MapGet("/api/estimates/by-entity/{entityId}", async (
     string entityId,
@@ -536,6 +635,44 @@ static IResult MapPotholeCommandResponse(CommandResponse response)
         return Results.Created($"/api/potholes/{response.EntityId}", response);
     return MapCommandResponse(response);
 }
+
+// The shared body of the suspend / resume / retire routes.
+static async Task<IResult> ChangeVehicleStatus(string id, HttpContext ctx, JsonSerializerOptions jsonOptions,
+    Func<VehicleStatusRequest, Task<CommandResponse>> call)
+{
+    if (!TryGetIdempotencyKey(ctx, out var key))
+        return Results.BadRequest(new { error = "Missing Idempotency-Key header" });
+
+    return await CallGrpcCommand(async () =>
+    {
+        var body = ctx.Request.HasJsonContentType()
+            ? await ctx.Request.ReadFromJsonAsync<VehicleStatusBody>(jsonOptions)
+            : null;
+        var response = await call(new VehicleStatusRequest
+        {
+            VehicleId = id,
+            Reason = body?.Reason ?? "",
+            Metadata = BuildMetadata(ctx, key),
+        });
+        return MapCommandResponse(response);
+    });
+}
+
+// One vehicle for the screen: enum names as text, times as ISO UTC, 0 / never as null.
+static object VehicleJson(VehicleDetailResponse v) => new
+{
+    vehicleId = v.VehicleId,
+    plate = v.Plate,
+    districtId = v.DistrictId == 0 ? (int?)null : v.DistrictId,
+    notes = v.Notes,
+    status = v.Status.ToString(),
+    connectionStatus = v.ConnectionStatus.ToString(),
+    lastSeenAt = v.LastSeenAtUtc == 0 ? (DateTimeOffset?)null : DateTimeOffset.FromUnixTimeMilliseconds(v.LastSeenAtUtc),
+    lastLatitude = v.LastSeenAtUtc == 0 ? (double?)null : v.LastLatitude,
+    lastLongitude = v.LastSeenAtUtc == 0 ? (double?)null : v.LastLongitude,
+    pendingFrames = v.PendingFrames,
+    createdAt = DateTimeOffset.FromUnixTimeMilliseconds(v.CreatedAtUtc),
+};
 
 // The pothole list and map filters from the query string (names from the Pothole design page, P12).
 static ListDamagesRequest BuildDamageFilters(IQueryCollection query)
@@ -687,3 +824,6 @@ record CompleteBody(string ProofImageUrl);
 record AddPotholeBody(double Latitude, double Longitude, string? ImageUrl, string? Severity, double? AreaM2,
     double? DepthCm, string? Source, string? Notes);
 record CorrectionBody(string? Severity, string? Stage, double? AreaM2, double? DepthCm, string? Reason);
+record AddVehicleBody(string? VehicleId, string? Plate, int? DistrictId, string? Notes);
+record UpdateVehicleBody(string? Plate, int? DistrictId, string? Notes);
+record VehicleStatusBody(string? Reason);

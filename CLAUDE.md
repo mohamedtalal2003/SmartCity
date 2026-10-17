@@ -59,7 +59,7 @@ SignalR · Serilog → Seq · xUnit.
 | Service | HTTP (health, REST, SignalR) | gRPC (HTTP/2, no TLS) | Database |
 |---|---|---|---|
 | ApiGateway | 5000 | – | – |
-| VehicleCommunication | 5210 | – | – (stateless) |
+| VehicleCommunication | 5210 | 5211 (vehicle frames + admin/query) | vehiclecomm_db |
 | AiDetection | 5220 | – | – (stateless) |
 | Pothole | 5230 | 5231 | pothole_db |
 | Inventory | 5240 | 5241 | inventory_db |

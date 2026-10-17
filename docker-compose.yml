@@ -117,6 +117,7 @@ services:
       GrpcServices__CostCalculation: "http://costcalculation:5271"
       GrpcServices__WorkOrder: "http://workorder:5281"
       GrpcServices__Notification: "http://notification:5291"
+      GrpcServices__VehicleCommunication: "http://vehiclecommunication:5211"
       Redis__ConnectionString: "redis:6379"
       Seq__ServerUrl: "http://seq:5341"
     depends_on:
@@ -131,8 +132,12 @@ services:
     profiles: ["apps"]
     ports:
       - "5210:5210"
+      - "5211:5211"     # gRPC: frames from the vehicles (the simulator) + admin/query from the gateway
     environment:
       Ports__Http: "5210"
+      Ports__Grpc: "5211"
+      ConnectionStrings__Db: "Host=postgres;Port=5432;Database=vehiclecomm_db;Username=vehiclecomm_svc;Password=vehiclecomm_svc"
+      Seed__DevVehicles: "true"     # MUN-VEH-001..005 for the simulator (the containers do not run as Development)
       RabbitMQ__Host: "rabbitmq"
       RabbitMQ__Username: "${RABBITMQ_USER:-smartcity}"
       RabbitMQ__Password: "${RABBITMQ_PASSWORD:-smartcity}"
@@ -146,6 +151,7 @@ services:
       Redis__ConnectionString: "redis:6379"
       Seq__ServerUrl: "http://seq:5341"
     depends_on:
+      postgres: { condition: service_healthy }
       rabbitmq: { condition: service_healthy }
       emqx: { condition: service_healthy }
       s3: { condition: service_healthy }
