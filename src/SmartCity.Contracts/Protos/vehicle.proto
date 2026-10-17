@@ -1,0 +1,61 @@
+syntax = "proto3";
+package smartcity.vehicle.v1;
+
+// ─────────────────────────────────────────────────────────────
+// Vehicle → cloud: camera frames. Shared with the embedded team
+// (they generate Python from this file), so it imports nothing.
+// The rules for the Pi are in docs/design/vehicle/vehicle-protocol.md.
+//
+// The vehicle id is NOT in the message. It comes from the client
+// certificate (mTLS). In dev, without certificates, it is sent in
+// the gRPC metadata header "x-vehicle-id".
+//
+// The reply is the proof: the Pi deletes a frame from its card only
+// on SAVED, DUPLICATE or REJECTED. Errors come back as gRPC status
+// codes (UNAVAILABLE, RESOURCE_EXHAUSTED, UNAUTHENTICATED,
+// PERMISSION_DENIED); on any error the Pi keeps the frame.
+// ─────────────────────────────────────────────────────────────
+
+service VehicleIngestService {
+  // Upload one frame: the image and its data in one message.
+  rpc UploadFrame (UploadFrameRequest) returns (UploadFrameResponse);
+}
+
+message UploadFrameRequest {
+  string frame_id = 1;          // UUID made by the Pi; a resend of the same frame uses the same id
+  int64 captured_at_utc = 2;    // when the photo was taken, Unix epoch milliseconds, UTC
+  double latitude = 3;          // WGS84 latitude at capture time
+  double longitude = 4;         // WGS84 longitude at capture time
+  double gps_accuracy_m = 5;    // GPS accuracy in meters (smaller is better)
+  int32 gps_satellites = 6;     // number of satellites in the GPS fix
+  double heading_deg = 7;       // direction of travel, 0 to 360 degrees (0 = north)
+  double speed_kmh = 8;         // vehicle speed in km/h
+  bytes image = 9;              // the JPEG image itself (at most 4 MB)
+  string content_type = 10;     // always "image/jpeg"
+  int32 width_px = 11;          // image width in pixels
+  int32 height_px = 12;         // image height in pixels
+}
+
+message UploadFrameResponse {
+  UploadResult result = 1;          // what happened to the frame
+  RejectReason reject_reason = 2;   // set only when result = REJECTED
+}
+
+// Every value means: the Pi deletes the frame.
+enum UploadResult {
+  UPLOAD_RESULT_UNSPECIFIED = 0;    // never sent
+  SAVED = 1;                        // saved now
+  DUPLICATE = 2;                    // saved before (same frame_id)
+  REJECTED = 3;                     // will never be accepted; log reject_reason
+}
+
+// Why a frame was rejected.
+enum RejectReason {
+  REJECT_REASON_UNSPECIFIED = 0;    // not rejected
+  OUTSIDE_SERVICE_AREA = 1;         // the location is outside Istanbul
+  GPS_INACCURATE = 2;               // gps_accuracy_m is worse than the limit (25 m)
+  IMAGE_SIZE = 3;                   // the image is empty or larger than the limit (4 MB)
+  IMAGE_TYPE = 4;                   // content_type is not image/jpeg
+  BAD_TIMESTAMP = 5;                // captured more than 5 minutes in the future, or older than frameTtlHours
+  BAD_FRAME_ID = 6;                 // frame_id is not a UUID
+}

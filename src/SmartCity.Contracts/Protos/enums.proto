@@ -60,6 +60,22 @@ enum PotholeSavedReason {
   POTHOLE_SAVED_REASON_CORRECTED = 3;
 }
 
+// ─── Vehicles (Vehicle Communication service) ────────────────
+// Set by the admin. Only Active vehicles may upload frames. Retired is final.
+enum VehicleStatus {
+  VEHICLE_STATUS_UNSPECIFIED = 0;
+  VEHICLE_STATUS_ACTIVE = 1;
+  VEHICLE_STATUS_SUSPENDED = 2;         // stopped by the admin; can be resumed
+  VEHICLE_STATUS_RETIRED = 3;           // out of service for good
+}
+
+// Whether the vehicle is connected now (MQTT online/offline + heartbeat).
+enum VehicleConnectionStatus {
+  VEHICLE_CONNECTION_STATUS_UNSPECIFIED = 0;
+  VEHICLE_CONNECTION_STATUS_ONLINE = 1;
+  VEHICLE_CONNECTION_STATUS_OFFLINE = 2;
+}
+
 // ─── Urban inventory (Inventory service) ─────────────────────
 enum AssetCategory {
   ASSET_CATEGORY_UNSPECIFIED = 0;

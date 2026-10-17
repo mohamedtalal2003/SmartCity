@@ -134,6 +134,45 @@ message CorrectPotholeRequest {
   string reason = 7;                                        // required: why the data is corrected
 }
 
+// ─── Vehicles (served by Vehicle Communication) ──────────────
+// Admin commands on the municipality vehicles. entity_id = the vehicle id.
+// A Suspended or Retired vehicle's frame uploads get PERMISSION_DENIED.
+service VehicleAdminService {
+  // Add a vehicle (V1). It starts Active.
+  rpc AddVehicle (AddVehicleRequest) returns (smartcity.common.v1.CommandResponse);
+  // Change the plate, district or notes (V2). The vehicle id never changes.
+  rpc UpdateVehicle (UpdateVehicleRequest) returns (smartcity.common.v1.CommandResponse);
+  // Stop accepting frames from it (V3), e.g. the device was stolen.
+  rpc SuspendVehicle (VehicleStatusRequest) returns (smartcity.common.v1.CommandResponse);
+  // Accept its frames again (V3).
+  rpc ResumeVehicle (VehicleStatusRequest) returns (smartcity.common.v1.CommandResponse);
+  // Take it out of service for good (V4). Retired is final; its old frames stay.
+  rpc RetireVehicle (VehicleStatusRequest) returns (smartcity.common.v1.CommandResponse);
+}
+
+message AddVehicleRequest {
+  smartcity.common.v1.CommandMetadata metadata = 1;
+  string vehicle_id = 2;                // "MUN-VEH-" + digits, e.g. "MUN-VEH-001"
+  string plate = 3;                     // required, e.g. "34 ABC 001"
+  optional int32 district_id = 4;       // Istanbul district it works in; not set = none
+  string notes = 5;                     // free text
+}
+
+message UpdateVehicleRequest {
+  smartcity.common.v1.CommandMetadata metadata = 1;
+  string vehicle_id = 2;
+  optional string plate = 3;            // not set = unchanged
+  optional int32 district_id = 4;       // not set = unchanged; 0 = clear it
+  optional string notes = 5;            // not set = unchanged
+}
+
+// Shared by Suspend, Resume and Retire.
+message VehicleStatusRequest {
+  smartcity.common.v1.CommandMetadata metadata = 1;
+  string vehicle_id = 2;
+  string reason = 3;                    // free text, for the log
+}
+
 // ─── Urban Inventory ─────────────────────────────────────────
 service UrbanInventoryCommandService {
   rpc UpdateAssetCondition (UpdateAssetConditionRequest) returns (smartcity.common.v1.CommandResponse);

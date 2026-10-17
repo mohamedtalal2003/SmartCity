@@ -176,6 +176,43 @@ message Area {
   int32 parent_id = 4;                  // the district of a neighborhood; 0 for a district
 }
 
+// ─── Vehicles (served by Vehicle Communication) ──────────────
+// The municipality vehicles for the admin screen (V5).
+service VehicleQueryService {
+  rpc GetVehicle (GetVehicleRequest) returns (VehicleDetailResponse);
+  rpc ListVehicles (ListVehiclesRequest) returns (ListVehiclesResponse);
+}
+
+message GetVehicleRequest {
+  string vehicle_id = 1;                // e.g. "MUN-VEH-001"
+}
+
+message ListVehiclesRequest {
+  smartcity.enums.v1.VehicleStatus status = 1;                       // UNSPECIFIED = all
+  smartcity.enums.v1.VehicleConnectionStatus connection_status = 2;  // UNSPECIFIED = all
+  repeated int32 district_ids = 3;                                   // empty = all districts
+  smartcity.common.v1.PaginationRequest pagination = 4;              // ordered by vehicle id
+}
+
+message VehicleDetailResponse {
+  string vehicle_id = 1;
+  string plate = 2;
+  int32 district_id = 3;                // Istanbul district id; 0 = none
+  string notes = 4;
+  smartcity.enums.v1.VehicleStatus status = 5;
+  smartcity.enums.v1.VehicleConnectionStatus connection_status = 6;
+  int64 last_seen_at_utc = 7;           // last heartbeat, epoch ms; 0 = never seen
+  double last_latitude = 8;             // last known location; 0 when never seen
+  double last_longitude = 9;
+  int32 pending_frames = 10;            // frames waiting on the vehicle's card (from its heartbeat)
+  int64 created_at_utc = 11;
+}
+
+message ListVehiclesResponse {
+  repeated VehicleDetailResponse records = 1;
+  smartcity.common.v1.PaginationResponse pagination = 2;
+}
+
 // ─── Urban Inventory ─────────────────────────────────────────
 service UrbanInventoryQueryService {
   rpc GetAssetById (GetAssetRequest) returns (AssetDetailResponse);
