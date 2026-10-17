@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using SmartCity.VehicleCommunication.Application.Frames;
+using SmartCity.VehicleCommunication.Application.Vehicles;
 using SmartCity.VehicleCommunication.Domain.Frames;
 
 namespace SmartCity.VehicleCommunication.Application;
@@ -17,6 +18,9 @@ public static class DependencyInjection
         services.AddSingleton<FrameRateLimiter>();
 
         services.AddScoped<UploadFrame>();
+        services.AddScoped<AddVehicle>();
+        services.AddScoped<UpdateVehicle>();
+        services.AddScoped<ChangeVehicleStatus>();
 
         return services;
     }

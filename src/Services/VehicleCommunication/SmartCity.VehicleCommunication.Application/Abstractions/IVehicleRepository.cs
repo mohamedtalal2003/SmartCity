@@ -1,3 +1,4 @@
+using SmartCity.VehicleCommunication.Application.Commands;
 using SmartCity.VehicleCommunication.Domain.Frames;
 using SmartCity.VehicleCommunication.Domain.Vehicles;
 
@@ -11,6 +12,8 @@ public interface IVehicleRepository
 {
     Task<Vehicle?> GetAsync(string vehicleId, CancellationToken ct);
 
+    void Add(Vehicle vehicle);
+
     /// <summary>True when a frame with this id was already saved.</summary>
     Task<bool> ReceivedFrameExistsAsync(Guid frameId, CancellationToken ct);
 
@@ -19,4 +22,13 @@ public interface IVehicleRepository
     /// Returns false (and saves nothing) when another call saved the same frame id first.
     /// </summary>
     Task<bool> SaveNewFrameAsync(ReceivedFrame frame, CancellationToken ct);
+
+    /// <summary>The result of an earlier command with this idempotency key, or null.</summary>
+    Task<CommandResult?> FindCommandResultAsync(string idempotencyKey, CancellationToken ct);
+
+    /// <summary>Keeps a successful command result with its key. Saved by the same <see cref="SaveChangesAsync"/>.</summary>
+    void RememberCommandResult(string idempotencyKey, CommandResult result);
+
+    /// <summary>Saves everything in one transaction.</summary>
+    Task SaveChangesAsync(CancellationToken ct);
 }

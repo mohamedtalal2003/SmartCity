@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
 using SmartCity.VehicleCommunication.Application.Abstractions;
+using SmartCity.VehicleCommunication.Application.Commands;
 using SmartCity.VehicleCommunication.Domain.Frames;
 using SmartCity.VehicleCommunication.Domain.Vehicles;
 using SmartCity.VehicleCommunication.Infrastructure.Persistence.Configurations;
@@ -16,6 +17,8 @@ public sealed class VehicleRepository : IVehicleRepository
 
     public Task<Vehicle?> GetAsync(string vehicleId, CancellationToken ct) =>
         _db.Vehicles.FirstOrDefaultAsync(v => v.Id == vehicleId, ct);
+
+    public void Add(Vehicle vehicle) => _db.Vehicles.Add(vehicle);
 
     public Task<bool> ReceivedFrameExistsAsync(Guid frameId, CancellationToken ct) =>
         _db.ReceivedFrames.AnyAsync(f => f.FrameId == frameId, ct);
@@ -38,4 +41,35 @@ public sealed class VehicleRepository : IVehicleRepository
             return false;
         }
     }
+
+    public async Task<CommandResult?> FindCommandResultAsync(string idempotencyKey, CancellationToken ct)
+    {
+        if (string.IsNullOrEmpty(idempotencyKey))
+            return null;
+
+        var row = await _db.ProcessedIdempotencyKeys.AsNoTracking().FirstOrDefaultAsync(k => k.Key == idempotencyKey, ct);
+        return row is null
+            ? null
+            : new CommandResult(row.Success, Enum.Parse<CommandError>(row.ErrorCode), row.Message, row.EntityId, row.Created, row.ProcessedAt);
+    }
+
+    public void RememberCommandResult(string idempotencyKey, CommandResult result)
+    {
+        // Like Pothole: no key, nothing to remember; only successful results are kept.
+        if (string.IsNullOrEmpty(idempotencyKey) || !result.Success)
+            return;
+
+        _db.ProcessedIdempotencyKeys.Add(new ProcessedIdempotencyKey
+        {
+            Key = idempotencyKey,
+            Success = result.Success,
+            ErrorCode = result.Error.ToString(),
+            Message = result.Message,
+            EntityId = result.EntityId,
+            Created = result.Created,
+            ProcessedAt = result.ProcessedAt
+        });
+    }
+
+    public Task SaveChangesAsync(CancellationToken ct) => _db.SaveChangesAsync(ct);
 }
